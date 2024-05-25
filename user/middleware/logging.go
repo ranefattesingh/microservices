@@ -18,7 +18,7 @@ func Logger() gin.HandlerFunc {
 
 		status := c.Writer.Status()
 
-		log.Info(
+		log.Logger().Info(
 			c.Request.URL.Path,
 			zap.Duration("latency", latency),
 			zap.Int("http_status", status),
