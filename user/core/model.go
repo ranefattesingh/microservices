@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"regexp"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/ranefattesingh/pkg/json"
@@ -43,8 +44,8 @@ type User struct {
 	Email      string    `json:"email"`
 	Password   string    `json:"password"`
 	IsAdmin    bool      `json:"is_admin"`
-	CreateDate string    `json:"created_date"`
-	UpdateDate string    `json:"updated_date"`
+	CreateDate time.Time `json:"created_date"`
+	UpdateDate time.Time `json:"updated_date"`
 }
 
 func (u User) Valid(context.Context) error {

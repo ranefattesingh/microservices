@@ -39,18 +39,17 @@ func NewRepo(pool *pool.Pool) *psqlRepo {
 // 	return users, nil
 // }
 
-// func (p psqlRepo) ByID(ctx context.Context, id int) (*core.User, error) {
+func (p psqlRepo) GetUserByID(ctx context.Context, id uuid.UUID) (core.User, error) {
+	var user core.User
 
-// 	user := &core.User{}
+	err := p.pool.Connection().QueryRow(ctx, "SELECT id, name, email, password, is_admin, create_date, update_date FROM users WHERE id=$1", id).
+		Scan(&user.ID, &user.Name, &user.Email, &user.Password, &user.IsAdmin, &user.CreateDate, &user.UpdateDate)
+	if err != nil {
+		return user, fmt.Errorf("psql{GetUserByID}: %w", err)
+	}
 
-// 	err := p.pool.Connection().QueryRow(ctx, "SELECT id, name, email, is_admin, create_date FROM users WHERE id=$1", id).
-// 		Scan(&user.ID, &user.Name, &user.Email, &user.IsAdmin, &user.CreateDate)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return user, nil
-// }
+	return user, nil
+}
 
 func (p psqlRepo) CreateUser(ctx context.Context, user core.User) (uuid.UUID, error) {
 	userID := uuid.New()
