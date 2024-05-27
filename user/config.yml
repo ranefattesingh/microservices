@@ -1,6 +1,7 @@
+gin_mode: debug
 db:
   host: localhost
   port: 5432
-  name: user_db
-  user: user
-  password: testt
+  name: test
+  user: test
+  password: test

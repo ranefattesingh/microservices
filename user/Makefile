@@ -13,18 +13,23 @@ install.tools:
 	$(GOBIN)/golangci-lint --version
 	go install github.com/swaggo/swag/cmd/swag@latest
 	$(GOBIN)/swag --version
+	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
+	$(GOBIN)/migrate --version
 
 build: clean
 	go build -o $(APP_EXECUTABLE) main.go
 
 clean:
-	rm -rf bin coverage.out coverage.html
+	rm -rf bin coverage.out coverage.html golangci-lint-report.txt
 
 swagger:
 	$(GOBIN)/swag init -g handler/user.go -o ./swagger -ot go
 
 lint:
 	$(GOBIN)/golangci-lint run -c .golangci.yml
+
+lint.fix:
+	$(GOBIN)/golangci-lint run -c .golangci.yml --fix
 
 start:
 	$(APP_EXECUTABLE)
@@ -56,9 +61,9 @@ db.rollback: $(APP_EXECUTABLE)
 	$(APP_EXECUTABLE) rollback
 
 db.drop:
-	dropdb --if-exists -h localhost -U$(DB_USER) $(DB_NAME)
+	dropdb --if-exists -h localhost -U$(DB_USER) $(DB_NAME) 
 
 db.reset: db.drop db.create db.migrate
 
 db.create-migration:
-	migrate create -dir ./store/db/migrations -ext sql $(MIGRATION_NAME)
+	migrate create -dir ./repo/psql/migrations -ext sql $(MIGRATION_NAME)

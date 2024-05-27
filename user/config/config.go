@@ -6,36 +6,37 @@ import (
 )
 
 type MainConfig struct {
-	GinMode        string         `yaml:"gin_mode" mapstructure:"gin_mode" default:"test"`
-	LogLevel       string         `yaml:"log_level" mapstructure:"log_level" default:"info"`
-	HTTPConfig     HTTPConfig     `yaml:"http" mapstructure:"http"`
-	DatabaseConfig DatabaseConfig `yaml:"db" mapstructure:"db"`
+	GinMode        string         `default:"test"      mapstructure:"gin_mode"  yaml:"gin_mode"`
+	LogLevel       string         `default:"info"      mapstructure:"log_level" yaml:"log_level"`
+	HTTPConfig     HTTPConfig     `mapstructure:"http" yaml:"http"`
+	DatabaseConfig DatabaseConfig `mapstructure:"db"   yaml:"db"`
 }
 
 type HTTPConfig struct {
-	Host string `yaml:"host" mapstructure:"host" default:"0.0.0.0"`
-	Port int    `yaml:"port" mapstructure:"port" default:"8001"`
+	Host string `default:"0.0.0.0" mapstructure:"host" yaml:"host"`
+	Port int    `default:"8001"    mapstructure:"port" yaml:"port"`
 }
 
 type DatabaseConfig struct {
-	Host     string             `yaml:"host" mapstructure:"host"`
-	Port     string             `yaml:"port" mapstructure:"port"`
-	Name     string             `yaml:"name" mapstructure:"name"`
-	User     string             `yaml:"user" mapstructure:"user"`
-	Password string             `yaml:"password" mapstructure:"password"`
-	UseSSL   bool               `yaml:"use_ssl" mapstructure:"use_ssl" default:"false"`
-	Pool     DatabasePoolConfig `yaml:"pool" mapstructure:"pool"`
+	Host     string             `mapstructure:"host"     yaml:"host"`
+	Port     string             `mapstructure:"port"     yaml:"port"`
+	Name     string             `mapstructure:"name"     yaml:"name"`
+	User     string             `mapstructure:"user"     yaml:"user"`
+	Password string             `mapstructure:"password" yaml:"password"`
+	UseSSL   bool               `default:"false"         mapstructure:"use_ssl" yaml:"use_ssl"`
+	Pool     DatabasePoolConfig `mapstructure:"pool"     yaml:"pool"`
 }
 
 type DatabasePoolConfig struct {
-	ConnMaxLifetime       string `yaml:"conn_max_lifetime" mapstructure:"conn_max_lifetime" default:"5m"`
-	MaxConnIdleTime       string `yaml:"max_conn_idle_time" mapstructure:"max_conn_idle_time" default:"5m"`
-	MaxConnLifeTimeJitter string `yaml:"max_conn_lifetime_jitter" mapstructure:"max_conn_lifetime_jitter" default:"30s"`
-	MaxHealthCheckPeriod  string `yaml:"health_check_period" mapstructure:"health_check_period" default:"5s"`
-	MaxConns              int    `yaml:"max_conns" mapstructure:"max_conns" default:"1000"`
-	MinConns              int    `yaml:"min_conns" mapstructure:"min_conns" default:"1"`
+	ConnMaxLifetime       string `default:"5m"   mapstructure:"conn_max_lifetime"        yaml:"conn_max_lifetime"`
+	MaxConnIdleTime       string `default:"5m"   mapstructure:"max_conn_idle_time"       yaml:"max_conn_idle_time"`
+	MaxConnLifeTimeJitter string `default:"30s"  mapstructure:"max_conn_lifetime_jitter" yaml:"max_conn_lifetime_jitter"`
+	MaxHealthCheckPeriod  string `default:"5s"   mapstructure:"health_check_period"      yaml:"health_check_period"`
+	MaxConns              int    `default:"1000" mapstructure:"max_conns"                yaml:"max_conns"`
+	MinConns              int    `default:"1"    mapstructure:"min_conns"                yaml:"min_conns"`
 }
 
+//nolint:revive
 func (dc DatabaseConfig) GetConnectionString() string {
 	var builder strings.Builder
 
@@ -52,6 +53,16 @@ func (dc DatabaseConfig) GetConnectionString() string {
 	}
 
 	builder.WriteString(sslMode)
+
+	return builder.String()
+}
+
+//nolint:revive
+func (dc DatabaseConfig) GetConnectionStringWithOptions() string {
+	var builder strings.Builder
+
+	builder.WriteString(dc.GetConnectionString())
+
 	builder.WriteString("&pool_max_conns=" + strconv.Itoa(dc.Pool.MaxConns))
 	builder.WriteString("&pool_min_conns=" + strconv.Itoa(dc.Pool.MinConns))
 	builder.WriteString("&pool_max_conn_lifetime=" + dc.Pool.ConnMaxLifetime)

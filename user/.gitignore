@@ -1,3 +1,4 @@
 bin
 coverage.html
 coverage.out
+golangci-lint-report.txt
