@@ -4,8 +4,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ranefattesingh/pkg/log"
 	"go.uber.org/zap"
+
+	"github.com/ranefattesingh/pkg/log"
 )
 
 func Logger() gin.HandlerFunc {
