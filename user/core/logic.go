@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/google/uuid"
 )
@@ -24,14 +25,19 @@ func (u *userService) GetAllUsers(ctx context.Context) (Users, error) {
 	return nil, nil
 }
 
-func (u *userService) GetUserById(ctx context.Context, id uuid.UUID) (*User, error) {
-	return nil, nil
+func (u *userService) GetUserByID(ctx context.Context, id uuid.UUID) (User, error) {
+	user, err := u.repo.GetUserByID(ctx, id)
+	if err != nil {
+		return user, fmt.Errorf("service{GetUserById}: %w", err)
+	}
+
+	return user, nil
 }
 
 func (u *userService) CreateUser(ctx context.Context, user User) (uuid.UUID, error) {
 	userID, err := u.repo.CreateUser(ctx, user)
 	if err != nil {
-		return uuid.Nil, err
+		return uuid.Nil, fmt.Errorf("service{CreateUser}: %w", err)
 	}
 
 	return userID, nil

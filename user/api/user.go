@@ -20,6 +20,12 @@ var (
 		Message:        "invalid create user request",
 		Code:           http.StatusBadRequest,
 	}
+
+	ErrInvalidUserID = &json.Error{
+		HTTPStatusCode: http.StatusBadRequest,
+		Message:        "invalid user id",
+		Code:           http.StatusBadRequest,
+	}
 )
 
 type UserInterface interface {
@@ -42,7 +48,13 @@ func NewUserHandler(svc core.UserService) *userHandle {
 }
 
 func (uh *userHandle) RetrieveUser(ctx *gin.Context) {
-	user, err := uh.service.GetUserById(ctx, uuid.Nil)
+	userID, err := uuid.Parse(ctx.Param("id"))
+	if err != nil {
+		log.Logger().Error("user_id parsing error", zap.Error(err))
+		logOnError(json.EncodeErrorJSON(ctx.Writer, ErrInvalidUserID))
+	}
+
+	user, err := uh.service.GetUserByID(ctx, userID)
 	if err != nil {
 		log.Logger().Error("retrieve user returned with error", zap.Error(err))
 		logOnError(json.EncodeErrorJSON(ctx.Writer, err))
