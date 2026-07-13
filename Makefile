@@ -1,6 +1,6 @@
 EXECUTABLE := ecommerceplatform
 
-DB_URL := postgres://postgres:postgres@10.255.255.254:5432/ecommerce?sslmode=disable
+DB_URL := postgresql://ecommerce:ecommerce@localhost:5432/ecommerce?sslmode=disable
 MIGRATIONS_DIR := migrations
 
 .PHONY: build start clean create-migration migrate-up migrate-down migrate-force migrate-version

@@ -7,6 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/ranefattesingh/ecommerce-platform/internal/router"
 	"github.com/ranefattesingh/ecommerce-platform/internal/user/handlers/models"
+	"github.com/ranefattesingh/ecommerce-platform/internal/user/service"
 )
 
 type UsersHandler interface {
@@ -14,11 +15,15 @@ type UsersHandler interface {
 }
 
 type userHandler struct {
-	validate *validator.Validate
+	validate    *validator.Validate
+	userService service.UsersService
 }
 
-func NewUserHandler(v *validator.Validate) *userHandler {
-	return &userHandler{validate: v}
+func NewUserHandler(v *validator.Validate, us service.UsersService) *userHandler {
+	return &userHandler{
+		validate:    v,
+		userService: us,
+	}
 }
 
 func (uh userHandler) Routes() router.RouterGroup {
