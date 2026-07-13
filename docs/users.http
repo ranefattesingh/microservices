@@ -1,0 +1,14 @@
+@baseUrl = http://localhost:8080
+@token = mytoken
+
+POST {{baseUrl}}/api/v1/users
+content-type: application/json
+
+{
+    "firstName": "Sahil",
+    "lastName": "Rane",
+    "email": "noreply@ecommerce.com",
+    "phone": "7217217217",
+    "password": "test@123",
+    "confirmPassword": "test@123"
+}
