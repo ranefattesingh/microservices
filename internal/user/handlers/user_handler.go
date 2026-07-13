@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/ranefattesingh/ecommerce-platform/internal/router"
 	"github.com/ranefattesingh/ecommerce-platform/internal/user/handlers/models"
 )
 
@@ -18,6 +19,20 @@ type userHandler struct {
 
 func NewUserHandler(v *validator.Validate) *userHandler {
 	return &userHandler{validate: v}
+}
+
+func (uh userHandler) Routes() router.RouterGroup {
+	return router.RouterGroup{
+		Name: "users",
+		Routes: []router.Route{
+			{
+				Name:        "CreateUser",
+				Path:        "",
+				Method:      http.MethodPost,
+				HandlerFunc: uh.CreateUser,
+			},
+		},
+	}
 }
 
 func (uh userHandler) CreateUser(c *gin.Context) {
