@@ -10,6 +10,7 @@ import (
 
 type UsersRepository interface {
 	CreateUser(ctx context.Context, user models.User) (int64, error)
+	GetUserHavingEmailOrPhone(ctx context.Context, email, phone string) (models.User, error)
 }
 
 type usersRepository struct {
@@ -51,4 +52,31 @@ func (r *usersRepository) CreateUser(ctx context.Context, user models.User) (int
 	}
 
 	return id, nil
+}
+
+func (r *usersRepository) GetUserHavingEmailOrPhone(ctx context.Context, email, phone string) (models.User, error) {
+	const query = `
+		SELECT id, email, phone
+		FROM users
+		WHERE email = $1 OR phone = $2
+	`
+
+	var user models.User
+
+	err := r.db.Pool.QueryRow(
+		ctx,
+		query,
+		email,
+		phone,
+	).Scan(
+		&user.ID,
+		&user.Email,
+		&user.Phone,
+	)
+
+	if err != nil {
+		return user, fmt.Errorf("read user %w", err)
+	}
+
+	return user, nil
 }
