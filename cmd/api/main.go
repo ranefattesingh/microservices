@@ -40,7 +40,7 @@ func main() {
 	repo := userRepoPSQL.NewUsersRepository(db)
 	service := service.NewUsersService(repo)
 	validate := validator.New(validator.WithRequiredStructEnabled())
-	usersHandler := handlers.NewUserHandler(validate, service)
+	usersHandler := handlers.NewUserHandler(validate, service, logger)
 
 	v1Router := router.NewV1Router(usersHandler)
 
