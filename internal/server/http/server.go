@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/gin-gonic/gin"
 	"github.com/ranefattesingh/ecommerce-platform/internal/config"
 )
 
@@ -24,12 +25,13 @@ func NewHTTPServer(conf config.ServerConfig) *httpServer {
 	}
 }
 
-func (s *httpServer) StartServer() error {
+func (s *httpServer) StartServer(mux *gin.Engine) error {
 	srv := &http.Server{
 		Addr:         ":" + strconv.Itoa(s.config.Port),
 		ReadTimeout:  s.config.ReadTimeout,
 		WriteTimeout: s.config.WriteTimeout,
 		IdleTimeout:  s.config.IdleTimeout,
+		Handler:      mux,
 	}
 
 	go s.shutdown(srv)
