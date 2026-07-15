@@ -1,19 +1,22 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"github.com/ranefattesingh/ecommerce-platform/internal/router"
 	"github.com/ranefattesingh/ecommerce-platform/internal/user/handlers/models"
 	"github.com/ranefattesingh/ecommerce-platform/internal/user/service"
+	"github.com/ranefattesingh/ecommerce-platform/pkg/httperror"
 	"github.com/ranefattesingh/ecommerce-platform/pkg/response"
 	"go.uber.org/zap"
 )
 
 type UsersHandler interface {
-	CreateUser(c *gin.Context)
+	CreateUser(c *gin.Context) response.Responder
 }
 
 type userHandler struct {
@@ -44,32 +47,39 @@ func (uh userHandler) Routes() router.RouterGroup {
 	}
 }
 
-func (uh userHandler) CreateUser(c *gin.Context) {
+func (uh userHandler) CreateUser(c *gin.Context) response.Responder {
 	var req models.CreateUserRequest
 	err := c.BindJSON(&req)
 	if err != nil {
 		uh.logger.Error("fail to bind the request", zap.Error(err))
 
-		response.BadRequest(c, err)
-
-		return
+		return httperror.BadRequest()
 	}
 
 	err = uh.validate.Struct(req)
 	if err != nil {
 		uh.logger.Error("request validation fail", zap.Error(err))
-		response.BadRequest(c, err)
 
-		return
+		return httperror.BadRequest()
 	}
 
-	resp, err := uh.userService.CreateUser(c, req)
+	userID, err := uh.userService.CreateUser(c, req)
 	if err != nil {
 		uh.logger.Error("server processing error", zap.Error(err))
-		response.ErrorResponse(c, err)
 
-		return
+		pb, ok := errors.AsType[*httperror.ProblemDetails](err)
+		if ok {
+			return pb
+		}
+
+		return httperror.InternalServerError(err)
 	}
 
-	c.JSON(http.StatusOK, map[string]int64{"id": resp})
+	result := map[string]int64{
+		"id": userID,
+	}
+
+	location := "/users/" + strconv.FormatInt(userID, 10)
+
+	return response.Created(location).Body(result)
 }

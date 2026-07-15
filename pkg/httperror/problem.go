@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/ranefattesingh/ecommerce-platform/pkg/response"
 )
 
 var reservedKeys = map[string]struct{}{
@@ -30,22 +31,24 @@ type ProblemDetails struct {
 	Title      string
 	Detail     string
 	Instance   string
-	StatusCode int
+	Status     int
 	Extensions map[string]any
 
 	header http.Header
-	error
+	err    error
 }
 
-func NewProblemDetails(title string, statusCode int) *ProblemDetails {
+var _ response.Responder = (*ProblemDetails)(nil)
+
+func NewProblemDetails(title string, Status int) *ProblemDetails {
 	return &ProblemDetails{
 		Type:       "about:blank",
 		Title:      title,
 		Detail:     "",
 		Instance:   "",
-		StatusCode: statusCode,
+		Status:     Status,
 		Extensions: make(map[string]any),
-		error:      nil,
+		err:        nil,
 	}
 }
 
@@ -70,7 +73,7 @@ func (p *ProblemDetails) SetInstance(instance string) *ProblemDetails {
 }
 
 func (p *ProblemDetails) SetStatus(code int) *ProblemDetails {
-	p.StatusCode = code
+	p.Status = code
 	return p
 }
 
@@ -89,7 +92,7 @@ func (p *ProblemDetails) AddExtension(key string, value any) *ProblemDetails {
 }
 
 func (p *ProblemDetails) SetError(err error) *ProblemDetails {
-	p.error = errors.Join(p.error, err)
+	p.err = errors.Join(p.err, err)
 	return p
 }
 
@@ -137,7 +140,7 @@ func (p *ProblemDetails) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	if err := writeKV("status", p.StatusCode, &first); err != nil {
+	if err := writeKV("status", p.Status, &first); err != nil {
 		return nil, err
 	}
 
@@ -160,82 +163,35 @@ func (p *ProblemDetails) MarshalJSON() ([]byte, error) {
 }
 
 func (p *ProblemDetails) Error() string {
-	if p.error != nil {
-		return p.error.Error()
+	if p.err != nil {
+		return p.err.Error()
 	}
 
 	return fmt.Sprintf("problem: %s: %s", p.Title, p.Detail)
 }
 
-func (p *ProblemDetails) Respond(w http.ResponseWriter, r *http.Request) {
-	p.ServeHTTP(w, r)
-}
-
-func (p *ProblemDetails) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if p.StatusCode == 0 {
-		p.StatusCode = http.StatusInternalServerError
+func (p *ProblemDetails) Respond(c *gin.Context) error {
+	if p.Status == 0 {
+		p.Status = http.StatusInternalServerError
 	}
 
-	if strings.TrimSpace(p.Instance) == "" {
-		p.Instance = r.URL.Path
-	}
-
-	if strings.TrimSpace(p.Type) == "" {
-		p.Type = "about:blank"
-	}
-
-	if p.Extensions == nil {
-		p.Extensions = make(map[string]any)
-	}
-
-	if r.Header.Get("X-Request-ID") != "" {
-		p.Extensions["requestId"] = r.Header.Get("X-Request-ID")
-	}
-
-	if r.Header.Get("X-Correlation-ID") != "" {
-		p.Extensions["correlationId"] = r.Header.Get("X-Correlation-ID")
-	}
-
-	for k, v := range p.header {
-		for _, h := range v {
-			w.Header().Add(k, h)
-		}
-	}
-}
-
-func (p *ProblemDetails) Gin(c *gin.Context) {
-	if p.StatusCode == 0 {
-		p.StatusCode = http.StatusInternalServerError
-	}
-
-	if strings.TrimSpace(p.Instance) == "" {
+	if p.Instance == "" {
 		p.Instance = c.Request.URL.Path
 	}
 
-	if strings.TrimSpace(p.Type) == "" {
+	if p.Type == "" {
 		p.Type = "about:blank"
 	}
 
-	if p.Extensions == nil {
-		p.Extensions = make(map[string]any)
-	}
-
-	if id := c.GetHeader("X-Request-ID"); id != "" {
-		p.Extensions["requestId"] = id
-	}
-
-	if id := c.GetHeader("X-Correlation-ID"); id != "" {
-		p.Extensions["correlationId"] = id
-	}
-
-	for k, v := range p.header {
-		for _, h := range v {
-			c.Writer.Header().Add(k, h)
+	for k, values := range p.header {
+		for _, value := range values {
+			c.Writer.Header().Add(k, value)
 		}
 	}
 
-	c.Header("Content-Type", "application/problem+json")
-	c.JSON(p.StatusCode, p)
+	c.JSON(p.Status, p)
+
+	return nil
 }
 
 func BadRequest(violations ...Violations) *ProblemDetails {
@@ -260,7 +216,7 @@ func Unauthorized() *ProblemDetails {
 }
 
 func Forbidden() *ProblemDetails {
-	return NewProblemDetails("Forbidden", http.StatusForbidden).SetDetail("You don't have required required permission/role to perform this action.")
+	return NewProblemDetails("Forbidden", http.StatusForbidden).SetDetail("You don't have the required permission or role to perform this action.")
 }
 
 func NotFound() *ProblemDetails {
@@ -322,6 +278,29 @@ func UnprocessableEntity(violations ...Violations) *ProblemDetails {
 	return problemDetails
 }
 
+func TooManyRequests() *ProblemDetails {
+	return NewProblemDetails("Too Many Requests", http.StatusTooManyRequests).SetDetail("The request was rate-limited. Try again later.")
+}
+
+func InternalServerError(errs ...error) *ProblemDetails {
+	problemDetails := NewProblemDetails("Internal Server Error", http.StatusInternalServerError).SetDetail("Server encountered an internal error processing the request. Please try again later")
+
+	if len(errs) > 0 {
+		err := errors.Join(errs...)
+		problemDetails.err = err
+	}
+
+	return problemDetails
+}
+
+func BadGateway() *ProblemDetails {
+	return NewProblemDetails("Bad Gateway", http.StatusBadGateway).SetDetail("The server received an invalid response from an upstream server..")
+}
+
+func ServiceUnavailable() *ProblemDetails {
+	return NewProblemDetails("Service Unavailable", http.StatusServiceUnavailable).SetDetail("The server is currently unable to handle the request due to a temporary overloading or maintenance of the server. Please try again later")
+}
+
 type Violations map[string][]string
 
 func (v *Violations) Add(field string, errors ...string) {
@@ -346,12 +325,12 @@ func (v *Violations) Len() int {
 	return len(*v)
 }
 
-func (v *Violations) AsResponse() *ProblemDetails {
-	if len(*v) == 0 {
+func (v Violations) AsResponse() *ProblemDetails {
+	if len(v) == 0 {
 		return UnprocessableEntity()
 	}
 
-	return UnprocessableEntity(*v)
+	return UnprocessableEntity(v)
 }
 
 func mergeViolations(v ...Violations) Violations {
