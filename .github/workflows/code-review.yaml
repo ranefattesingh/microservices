@@ -1,5 +1,7 @@
 name: AI Code Reviewer
 
+env:
+  BASE_REF: ${{ github.base_ref }}
 on:
   pull_request:
     types: [opened, synchronize]
