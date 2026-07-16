@@ -103,8 +103,10 @@ def main():
 
     # 2. Command Injection Defense: Separating arguments using -- flag
     try:
-        subprocess.run(["git", "fetch", "depth=2", "origin", base_ref], capture_output=True, text=True, check=True)
-        cmd = ["git", "diff", f"origin/{base_ref}...HEAD", "--"] # -- guarantees trailing items are handled strictly as paths/references
+        # Fixed: Added the leading dashes so git recognizes it as an option flag
+        subprocess.run(["git", "fetch", "--depth=2", "origin", base_ref], capture_output=True, text=True, check=True)
+
+        cmd = ["git", "diff", f"origin/{base_ref}...HEAD", "--"]
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
         diff = result.stdout
     except subprocess.CalledProcessError as e:
