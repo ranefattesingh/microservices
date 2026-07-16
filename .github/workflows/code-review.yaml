@@ -8,19 +8,17 @@ jobs:
   review:
     runs-on: ubuntu-latest
 
-    # Hardened Rule: Immediately terminate execution if the PR comes from a fork
     if: github.event.pull_request.head.repo.full_name == github.repository
 
-    # Global Job Token Constraint Mitigation
     permissions:
-      pull-requests: write  # Strict minimum permissions to update PR thread
-      contents: read        # Read access to pull code delta layers safely
+      pull-requests: write
+      contents: read
 
     steps:
       - name: Checkout Code Base
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0    # Ensures complete commit log history tracking
+          fetch-depth: 2    # Optimized: Grabs just enough local depth context to parse the PR delta layers
 
       - name: Set up Environment Runtime
         uses: actions/setup-python@v5
@@ -33,5 +31,5 @@ jobs:
       - name: Run Secured AI Audit Loop
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.github_token }} # Scoped repository token usage
         run: python .github/scripts/review.py
