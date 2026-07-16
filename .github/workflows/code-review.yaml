@@ -17,7 +17,9 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Necessary for git diff between branches
+      - name: Fetch origin
+        run: git fetch origin
 
       - name: Set up Python
         uses: actions/setup-python@v5
