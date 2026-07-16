@@ -73,11 +73,27 @@ def main():
     ```
     """
 
-    print("Sending diff to Gemini...")
-    response = client.models.generate_content(
-        model='gemini-3.5-flash',
-        contents=prompt,
-    )
+    # Try the primary model first, fallback if it's hitting a high-demand spike
+    primary_model = 'gemini-3.5-flash'
+    fallback_model = 'gemini-3.1-flash-lite'
+
+    try:
+        print(f"Sending diff to primary model ({primary_model})...")
+        response = client.models.generate_content(
+            model=primary_model,
+            contents=prompt,
+        )
+    except Exception as e:
+        print(f"Primary model unavailable due to high traffic ({str(e)}).")
+        print(f"Instantly falling back to {fallback_model}...")
+        try:
+            response = client.models.generate_content(
+                model=fallback_model,
+                contents=prompt,
+            )
+        except Exception as fallback_error:
+            print(f"Both models failed: {fallback_error}")
+            return
 
     ai_review = response.text
 
