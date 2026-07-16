@@ -1,7 +1,5 @@
 name: AI Code Reviewer
 
-env:
-  BASE_REF: ${{ github.base_ref }}
 on:
   pull_request:
     types: [opened, synchronize]
@@ -9,27 +7,30 @@ on:
 jobs:
   review:
     runs-on: ubuntu-latest
+
+    # Hardened Rule: Immediately terminate execution if the PR comes from a fork
+    if: github.event.pull_request.head.repo.full_name == github.repository
+
+    # Global Job Token Constraint Mitigation
     permissions:
-      pull-requests: write
-      contents: read
+      pull-requests: write  # Strict minimum permissions to update PR thread
+      contents: read        # Read access to pull code delta layers safely
 
     steps:
-      - name: Checkout Code
+      - name: Checkout Code Base
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necessary for git diff between branches
-      - name: Fetch origin
-        run: git fetch origin
+          fetch-depth: 0    # Ensures complete commit log history tracking
 
-      - name: Set up Python
+      - name: Set up Environment Runtime
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Install System Dependencies
         run: pip install google-genai
 
-      - name: Run AI Reviewer
+      - name: Run Secured AI Audit Loop
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
