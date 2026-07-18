@@ -6,10 +6,10 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	httperror "github.com/ranefattesingh/ecommerce-platform/pkg/httperror"
 	"github.com/ranefattesingh/ecommerce-platform/users/internal/user/handlers/models"
 	dbModel "github.com/ranefattesingh/ecommerce-platform/users/internal/user/repository/models"
 	"github.com/ranefattesingh/ecommerce-platform/users/internal/user/repository/psql"
-	httperror "github.com/ranefattesingh/ecommerce-platform/users/pkg/httperror"
 )
 
 type UsersService interface {

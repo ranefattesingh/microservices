@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
+	loader "github.com/ranefattesingh/ecommerce-platform/pkg/config"
 	"github.com/ranefattesingh/ecommerce-platform/users/internal/config"
 	"github.com/ranefattesingh/ecommerce-platform/users/internal/platform/database/psql"
 	"github.com/ranefattesingh/ecommerce-platform/users/internal/router"
@@ -13,7 +14,6 @@ import (
 	"github.com/ranefattesingh/ecommerce-platform/users/internal/user/handlers"
 	userRepoPSQL "github.com/ranefattesingh/ecommerce-platform/users/internal/user/repository/psql"
 	"github.com/ranefattesingh/ecommerce-platform/users/internal/user/service"
-	loader "github.com/ranefattesingh/ecommerce-platform/users/pkg/config"
 	"go.uber.org/zap"
 )
 
