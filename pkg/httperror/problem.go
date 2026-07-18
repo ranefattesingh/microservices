@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/ranefattesingh/ecommerce-platform/users/pkg/response"
+	"github.com/ranefattesingh/ecommerce-platform/pkg/response"
 )
 
 var reservedKeys = map[string]struct{}{
