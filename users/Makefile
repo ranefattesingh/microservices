@@ -7,7 +7,7 @@ MIGRATIONS_DIR := migrations
 
 
 build:
-	go build -o bin/${EXECUTABLE} cmd/api/main.go
+	go build -o bin/${EXECUTABLE} main.go
 
 start: build
 	./bin/${EXECUTABLE}

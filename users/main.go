@@ -9,6 +9,7 @@ import (
 	loader "github.com/ranefattesingh/ecommerce-platform/pkg/config"
 	"github.com/ranefattesingh/ecommerce-platform/users/config"
 	"github.com/ranefattesingh/ecommerce-platform/users/handlers"
+	"github.com/ranefattesingh/ecommerce-platform/users/internal/router"
 	"github.com/ranefattesingh/ecommerce-platform/users/platform/database/psql"
 	userRepoPSQL "github.com/ranefattesingh/ecommerce-platform/users/repository/psql"
 	"github.com/ranefattesingh/ecommerce-platform/users/server/http"
