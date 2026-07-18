@@ -7,7 +7,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/jackc/pgx/v5"
 	"github.com/ranefattesingh/ecommerce-platform/pkg/httperror"
 	"github.com/ranefattesingh/ecommerce-platform/pkg/response"
 	"github.com/ranefattesingh/ecommerce-platform/users/handlers/models"
@@ -104,9 +103,15 @@ func (uh userHandler) GetUser(c *gin.Context) response.Responder {
 	}
 
 	user, err := uh.userService.GetUser(c, id)
-	if errors.Is(err, pgx.ErrNoRows) {
-		return httperror.NotFound()
-		// return httperror.NotFound("user does not exist")
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			return httperror.NotFound()
+		}
+
+		uh.logger.Error("failed to get user", zap.Error(err))
+
+		return httperror.InternalServerError() // Or your equivalent generic error handler
 	}
 
 	return response.Ok(user)

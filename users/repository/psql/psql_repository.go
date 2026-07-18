@@ -3,7 +3,6 @@ package psql
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/ranefattesingh/ecommerce-platform/users/platform/database/psql"
@@ -86,7 +85,7 @@ func (r *usersRepository) GetUserHavingEmailOrPhone(ctx context.Context, email, 
 
 func (r *usersRepository) GetUser(ctx context.Context, id int64) (models.User, error) {
 	const query = `
-		SELECT	*
+		SELECT id, first_name, last_name, email, phone, access_type, created_at, updated_at
 		FROM users
 		WHERE id = $1
 	`
@@ -97,7 +96,6 @@ func (r *usersRepository) GetUser(ctx context.Context, id int64) (models.User, e
 	}
 
 	user, err := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByName[models.User])
-	log.Printf("user=%+v err=%v", user, err)
 	if err != nil {
 		return models.User{}, fmt.Errorf("usersRepository.GetUser: %w", err)
 	}
