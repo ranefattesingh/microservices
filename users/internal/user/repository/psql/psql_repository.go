@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ranefattesingh/ecommerce-platform/internal/platform/database/psql"
-	"github.com/ranefattesingh/ecommerce-platform/internal/user/repository/models"
+	"github.com/ranefattesingh/ecommerce-platform/users/internal/platform/database/psql"
+	"github.com/ranefattesingh/ecommerce-platform/users/internal/user/repository/models"
 )
 
 type UsersRepository interface {

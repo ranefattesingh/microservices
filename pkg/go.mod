@@ -1,4 +1,4 @@
-module github.com/ranefattesingh/ecommerce-platform/pkg
+module github.com/ranefattesingh/ecommerce-platform/users/pkg
 
 go 1.26.5
 
