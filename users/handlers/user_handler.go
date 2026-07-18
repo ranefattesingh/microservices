@@ -7,11 +7,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
-	"github.com/ranefattesingh/ecommerce-platform/users/internal/router"
-	"github.com/ranefattesingh/ecommerce-platform/users/internal/user/handlers/models"
-	"github.com/ranefattesingh/ecommerce-platform/users/internal/user/service"
-	"github.com/ranefattesingh/ecommerce-platform/users/pkg/httperror"
-	"github.com/ranefattesingh/ecommerce-platform/users/pkg/response"
+	"github.com/ranefattesingh/ecommerce-platform/pkg/httperror"
+	"github.com/ranefattesingh/ecommerce-platform/pkg/response"
+	"github.com/ranefattesingh/ecommerce-platform/users/handlers/models"
+	"github.com/ranefattesingh/ecommerce-platform/users/service"
 	"go.uber.org/zap"
 )
 
