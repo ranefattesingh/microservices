@@ -7,6 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
+	"github.com/jackc/pgx/v5"
 	"github.com/ranefattesingh/ecommerce-platform/pkg/httperror"
 	"github.com/ranefattesingh/ecommerce-platform/pkg/response"
 	"github.com/ranefattesingh/ecommerce-platform/users/handlers/models"
@@ -17,6 +18,7 @@ import (
 
 type UsersHandler interface {
 	CreateUser(c *gin.Context) response.Responder
+	GetUser(c *gin.Context) response.Responder
 }
 
 type userHandler struct {
@@ -42,6 +44,12 @@ func (uh userHandler) Routes() router.RouterGroup {
 				Path:        "",
 				Method:      http.MethodPost,
 				HandlerFunc: uh.CreateUser,
+			},
+			{
+				Name:        "GetUser",
+				Path:        "/:id",
+				Method:      http.MethodGet,
+				HandlerFunc: uh.GetUser,
 			},
 		},
 	}
@@ -82,4 +90,24 @@ func (uh userHandler) CreateUser(c *gin.Context) response.Responder {
 	location := "/users/" + strconv.FormatInt(userID, 10)
 
 	return response.Created(location).Body(result)
+}
+
+func (uh userHandler) GetUser(c *gin.Context) response.Responder {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		uh.logger.Error("invalid user_id param received", zap.Error(err))
+
+		voilations := httperror.Violations{}
+		voilations.Add("id", "invalid or empty user id")
+
+		return httperror.BadRequest(voilations)
+	}
+
+	user, err := uh.userService.GetUser(c, id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return httperror.NotFound()
+		// return httperror.NotFound("user does not exist")
+	}
+
+	return response.Ok(user)
 }
