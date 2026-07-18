@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/ranefattesingh/ecommerce-platform/users/platform/database/psql"
 	"github.com/ranefattesingh/ecommerce-platform/users/repository/models"
 )
@@ -11,6 +12,7 @@ import (
 type UsersRepository interface {
 	CreateUser(ctx context.Context, user models.User) (int64, error)
 	GetUserHavingEmailOrPhone(ctx context.Context, email, phone string) (models.User, error)
+	GetUser(ctx context.Context, id int64) (models.User, error)
 }
 
 type usersRepository struct {
@@ -48,7 +50,7 @@ func (r *usersRepository) CreateUser(ctx context.Context, user models.User) (int
 		user.AccessType,
 	).Scan(&id)
 	if err != nil {
-		return 0, fmt.Errorf("create user: %w", err)
+		return 0, fmt.Errorf("usersRepository.CreateUser: %w", err)
 	}
 
 	return id, nil
@@ -75,7 +77,27 @@ func (r *usersRepository) GetUserHavingEmailOrPhone(ctx context.Context, email, 
 	)
 
 	if err != nil {
-		return user, fmt.Errorf("read user %w", err)
+		return user, fmt.Errorf("usersRepository.GetUserHavingEmailOrPhone: %w", err)
+	}
+
+	return user, nil
+}
+
+func (r *usersRepository) GetUser(ctx context.Context, id int64) (models.User, error) {
+	const query = `
+		SELECT id, first_name, last_name, email, phone, access_type, created_at, updated_at
+		FROM users
+		WHERE id = $1
+	`
+
+	rows, err := r.db.Pool.Query(ctx, query, id)
+	if err != nil {
+		return models.User{}, fmt.Errorf("usersRepository.GetUser: %w", err)
+	}
+
+	user, err := pgx.CollectExactlyOneRow(rows, pgx.RowToStructByName[models.User])
+	if err != nil {
+		return models.User{}, fmt.Errorf("usersRepository.GetUser: %w", err)
 	}
 
 	return user, nil

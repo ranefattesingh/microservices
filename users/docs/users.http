@@ -12,3 +12,7 @@ content-type: application/json
     "password": "test@123",
     "confirmPassword": "test@123"
 }
+
+###
+
+GET {{baseUrl}}/api/v1/users/1

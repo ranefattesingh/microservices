@@ -12,8 +12,11 @@ import (
 	"github.com/ranefattesingh/ecommerce-platform/users/repository/psql"
 )
 
+var ErrUserNotFound = errors.New("user not found")
+
 type UsersService interface {
 	CreateUser(ctx context.Context, req models.CreateUserRequest) (int64, error)
+	GetUser(ctx context.Context, id int64) (models.User, error)
 }
 
 type usersService struct {
@@ -60,4 +63,28 @@ func (s *usersService) CreateUser(ctx context.Context, req models.CreateUserRequ
 	}
 
 	return id, nil
+}
+
+func (s *usersService) GetUser(ctx context.Context, id int64) (models.User, error) {
+	userDb, err := s.usersRepo.GetUser(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return models.User{}, ErrUserNotFound
+		}
+
+		return models.User{}, fmt.Errorf("usersService.GetUser: %w", err)
+	}
+
+	user := models.User{
+		ID:         userDb.ID,
+		FirstName:  userDb.FirstName,
+		LastName:   userDb.LastName,
+		Email:      userDb.Email,
+		Phone:      userDb.Phone,
+		AccessType: models.AccessType(userDb.AccessType),
+		CreatedAt:  userDb.CreatedAt,
+		UpdatedAt:  userDb.UpdatedAt,
+	}
+
+	return user, nil
 }

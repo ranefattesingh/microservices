@@ -1,14 +1,16 @@
 package models
 
+import "time"
+
 type AccessType string
 
 type User struct {
-	ID         int32      `json:"id"`
-	FirstName  string     `json:"firstName"`
-	LastName   string     `json:"lastName"`
-	Email      string     `json:"email"`
-	Phone      string     `json:"phone"`
-	AccessType AccessType `json:"accessType"`
-	CreatedAt  string     `json:"createdAt"`
-	UpdatedAt  string     `json:"updatedAt"`
+	ID         int64      `db:"id"`
+	FirstName  string     `db:"first_name"`
+	LastName   string     `db:"last_name"`
+	Email      string     `db:"email"`
+	Phone      string     `db:"phone"`
+	AccessType AccessType `db:"access_type"`
+	CreatedAt  time.Time  `db:"created_at"`
+	UpdatedAt  time.Time  `db:"updated_at"`
 }

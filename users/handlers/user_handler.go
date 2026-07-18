@@ -17,6 +17,7 @@ import (
 
 type UsersHandler interface {
 	CreateUser(c *gin.Context) response.Responder
+	GetUser(c *gin.Context) response.Responder
 }
 
 type userHandler struct {
@@ -42,6 +43,12 @@ func (uh userHandler) Routes() router.RouterGroup {
 				Path:        "",
 				Method:      http.MethodPost,
 				HandlerFunc: uh.CreateUser,
+			},
+			{
+				Name:        "GetUser",
+				Path:        "/:id",
+				Method:      http.MethodGet,
+				HandlerFunc: uh.GetUser,
 			},
 		},
 	}
@@ -82,4 +89,30 @@ func (uh userHandler) CreateUser(c *gin.Context) response.Responder {
 	location := "/users/" + strconv.FormatInt(userID, 10)
 
 	return response.Created(location).Body(result)
+}
+
+func (uh userHandler) GetUser(c *gin.Context) response.Responder {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		uh.logger.Error("invalid user_id param received", zap.Error(err))
+
+		voilations := httperror.Violations{}
+		voilations.Add("id", "invalid or empty user id")
+
+		return httperror.BadRequest(voilations)
+	}
+
+	user, err := uh.userService.GetUser(c, id)
+
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			return httperror.NotFound()
+		}
+
+		uh.logger.Error("failed to get user", zap.Error(err))
+
+		return httperror.InternalServerError() // Or your equivalent generic error handler
+	}
+
+	return response.Ok(user)
 }
