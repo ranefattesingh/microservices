@@ -10,6 +10,7 @@ import (
 	"github.com/ranefattesingh/ecommerce-platform/pkg/httperror"
 	"github.com/ranefattesingh/ecommerce-platform/pkg/response"
 	"github.com/ranefattesingh/ecommerce-platform/users/handlers/models"
+	"github.com/ranefattesingh/ecommerce-platform/users/internal/router"
 	"github.com/ranefattesingh/ecommerce-platform/users/service"
 	"go.uber.org/zap"
 )
