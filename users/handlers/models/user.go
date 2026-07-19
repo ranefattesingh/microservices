@@ -10,7 +10,7 @@ type User struct {
 	LastName   string     `json:"lastName"`
 	Email      string     `json:"email"`
 	Phone      string     `json:"phone"`
-	AccessType AccessType `json:"accessType"`
+	AccessType AccessType `json:"accessType,omitempty"`
 	CreatedAt  time.Time  `json:"createdAt"`
 	UpdatedAt  time.Time  `json:"updatedAt"`
 }
