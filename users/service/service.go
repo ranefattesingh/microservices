@@ -12,11 +12,15 @@ import (
 	"github.com/ranefattesingh/ecommerce-platform/users/repository/psql"
 )
 
-var ErrUserNotFound = errors.New("user not found")
+var (
+	ErrUserNotFound  = errors.New("user not found")
+	ErrNoUserUpdated = errors.New("user details could not be updated")
+)
 
 type UsersService interface {
 	CreateUser(ctx context.Context, req models.CreateUserRequest) (int64, error)
 	GetUser(ctx context.Context, id int64) (models.User, error)
+	UpdateUser(ctx context.Context, id int64, req models.UpdateUserRequest) error
 }
 
 type usersService struct {
@@ -38,23 +42,26 @@ func (s *usersService) CreateUser(ctx context.Context, req models.CreateUserRequ
 		AccessType: dbModel.AccessType(req.AccessType),
 	}
 
-	voilations := make(httperror.Violations, 0)
-
-	existingUser, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, user.Email, user.Phone)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	existingUsers, err := s.usersRepo.GetUsersHavingEmailOrPhone(ctx, user.Email, user.Phone)
+	if err != nil {
 		return 0, fmt.Errorf("service:CreateUser {%w}", err)
 	}
 
-	if existingUser.Email == user.Email {
-		voilations.Add("email", "Email address already taken")
-	}
+	if len(existingUsers) > 0 {
+		violations := make(httperror.Violations, 0)
+		for _, existing := range existingUsers {
+			if existing.Email == req.Email {
+				violations.Add("email", "Email address already taken")
+			}
 
-	if existingUser.Phone == user.Phone {
-		voilations.Add("phone", "Phone number already taken")
-	}
+			if existing.Phone == req.Phone {
+				violations.Add("phone", "Phone number already taken")
+			}
+		}
 
-	if voilations.Len() > 0 {
-		return 0, httperror.Conflict(voilations)
+		if violations.Len() > 0 {
+			return 0, fmt.Errorf("service:CreateUser {%w}", httperror.Conflict(violations))
+		}
 	}
 
 	id, err := s.usersRepo.CreateUser(ctx, user)
@@ -87,4 +94,61 @@ func (s *usersService) GetUser(ctx context.Context, id int64) (models.User, erro
 	}
 
 	return user, nil
+}
+
+func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.UpdateUserRequest) error {
+	userDb, err := s.usersRepo.GetUser(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUserNotFound
+		}
+		return fmt.Errorf("usersService.UpdateUser: %w", err)
+	}
+
+	existingUsers, err := s.usersRepo.GetUsersHavingEmailOrPhone(ctx, req.Email, req.Phone)
+	if err != nil {
+		return fmt.Errorf("service:UpdateUser {%w}", err)
+	}
+
+	if len(existingUsers) > 0 {
+		violations := make(httperror.Violations, 0)
+		for _, existing := range existingUsers {
+			if existing.ID == userDb.ID {
+				continue // Skip checking the user modifying their own row
+			}
+
+			if existing.ID != userDb.ID {
+				if existing.Email == req.Email {
+					violations.Add("email", "Email address already taken")
+				}
+				if existing.Phone == req.Phone {
+					violations.Add("phone", "Phone number already taken")
+				}
+			}
+		}
+
+		if violations.Len() > 0 {
+			return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(violations))
+		}
+	}
+
+	user := dbModel.User{
+		ID:         userDb.ID,
+		FirstName:  req.FirstName,
+		LastName:   req.LastName,
+		Email:      req.Email,
+		Phone:      req.Phone,
+		AccessType: userDb.AccessType,
+	}
+
+	err = s.usersRepo.UpdateUser(ctx, user)
+	if err != nil {
+		if errors.Is(err, psql.ErrNoRowsUpdated) {
+			return ErrNoUserUpdated
+		}
+
+		return fmt.Errorf("service:UpdateUser {%w}", err)
+	}
+
+	return nil
 }
