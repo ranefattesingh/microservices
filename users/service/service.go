@@ -12,18 +12,22 @@ import (
 	"github.com/ranefattesingh/ecommerce-platform/users/repository/psql"
 )
 
-var ErrUserNotFound = errors.New("user not found")
+var (
+	ErrUserNotFound  = errors.New("user not found")
+	ErrNoUserUpdated = errors.New("user details could not be updated")
+)
 
 type UsersService interface {
 	CreateUser(ctx context.Context, req models.CreateUserRequest) (int64, error)
 	GetUser(ctx context.Context, id int64) (models.User, error)
+	UpdateUser(ctx context.Context, id int64, req models.UpdateUserRequest) error
 }
 
 type usersService struct {
 	usersRepo psql.UsersRepository
 }
 
-func NewUsersService(usersRepo psql.UsersRepository) UsersService {
+func NewUsersService(usersRepo psql.UsersRepository) *usersService {
 	return &usersService{
 		usersRepo: usersRepo,
 	}
@@ -38,23 +42,24 @@ func (s *usersService) CreateUser(ctx context.Context, req models.CreateUserRequ
 		AccessType: dbModel.AccessType(req.AccessType),
 	}
 
-	voilations := make(httperror.Violations, 0)
-
 	existingUser, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, user.Email, user.Phone)
+	if err == nil {
+		voilations := make(httperror.Violations, 0)
+		if existingUser.Email == user.Email {
+			voilations.Add("email", "Email address already taken")
+		}
+
+		if existingUser.Phone == user.Phone {
+			voilations.Add("phone", "Phone number already taken")
+		}
+
+		if voilations.Len() > 0 {
+			return 0, httperror.Conflict(voilations)
+		}
+	}
+
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return 0, fmt.Errorf("service:CreateUser {%w}", err)
-	}
-
-	if existingUser.Email == user.Email {
-		voilations.Add("email", "Email address already taken")
-	}
-
-	if existingUser.Phone == user.Phone {
-		voilations.Add("phone", "Phone number already taken")
-	}
-
-	if voilations.Len() > 0 {
-		return 0, httperror.Conflict(voilations)
 	}
 
 	id, err := s.usersRepo.CreateUser(ctx, user)
@@ -87,4 +92,53 @@ func (s *usersService) GetUser(ctx context.Context, id int64) (models.User, erro
 	}
 
 	return user, nil
+}
+
+func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.UpdateUserRequest) error {
+	userDb, err := s.usersRepo.GetUser(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUserNotFound
+		}
+
+		return fmt.Errorf("usersService.UpdateUser: %w", err)
+	}
+
+	existingUser, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, req.Email, req.Phone)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("service:UpdateUser {%w}", err)
+	}
+
+	if existingUser.ID != userDb.ID {
+		voilations := make(httperror.Violations, 0)
+		if existingUser.Email == req.Email {
+			voilations.Add("email", "Email address already taken")
+		}
+
+		if existingUser.Phone == req.Phone {
+			voilations.Add("phone", "Phone number already taken")
+		}
+
+		return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(voilations))
+	}
+
+	user := dbModel.User{
+		ID:         userDb.ID,
+		FirstName:  req.FirstName,
+		LastName:   req.LastName,
+		Email:      req.Email,
+		Phone:      req.Phone,
+		AccessType: userDb.AccessType,
+	}
+
+	err = s.usersRepo.UpdateUser(ctx, user)
+	if err != nil {
+		if errors.Is(err, psql.ErrNoRowsUpdated) {
+			return ErrNoUserUpdated
+		}
+
+		return fmt.Errorf("service:UpdateUser {%w}", err)
+	}
+
+	return nil
 }

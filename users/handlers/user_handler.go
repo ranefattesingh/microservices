@@ -18,6 +18,7 @@ import (
 type UsersHandler interface {
 	CreateUser(c *gin.Context) response.Responder
 	GetUser(c *gin.Context) response.Responder
+	UpdateUser(c *gin.Context) response.Responder
 }
 
 type userHandler struct {
@@ -49,6 +50,12 @@ func (uh userHandler) Routes() router.RouterGroup {
 				Path:        "/:id",
 				Method:      http.MethodGet,
 				HandlerFunc: uh.GetUser,
+			},
+			{
+				Name:        "UpdateUser",
+				Path:        "/:id",
+				Method:      http.MethodPut,
+				HandlerFunc: uh.UpdateUser,
 			},
 		},
 	}
@@ -115,4 +122,49 @@ func (uh userHandler) GetUser(c *gin.Context) response.Responder {
 	}
 
 	return response.Ok(user)
+}
+
+func (uh userHandler) UpdateUser(c *gin.Context) response.Responder {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		uh.logger.Error("invalid user_id param received", zap.Error(err))
+
+		voilations := httperror.Violations{}
+		voilations.Add("id", "invalid or empty user id")
+
+		return httperror.BadRequest(voilations)
+	}
+
+	var req models.UpdateUserRequest
+	err = c.BindJSON(&req)
+	if err != nil {
+		uh.logger.Error("fail to bind the request", zap.Error(err))
+
+		return httperror.BadRequest()
+	}
+
+	err = uh.validate.Struct(req)
+	if err != nil {
+		uh.logger.Error("request validation fail", zap.Error(err))
+
+		return httperror.BadRequest()
+	}
+
+	err = uh.userService.UpdateUser(c, id, req)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			return httperror.NotFound()
+		}
+
+		pb, ok := errors.AsType[*httperror.ProblemDetails](err)
+		if ok {
+			return pb
+		}
+
+		uh.logger.Error("failed to get user", zap.Error(err))
+
+		return httperror.InternalServerError() // Or your equivalent generic error handler
+	}
+
+	return response.NoContent()
 }
