@@ -42,8 +42,12 @@ func (s *usersService) CreateUser(ctx context.Context, req models.CreateUserRequ
 		AccessType: dbModel.AccessType(req.AccessType),
 	}
 
-	existingUsers, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, user.Email, user.Phone)
-	if !errors.Is(err, pgx.ErrNoRows) {
+	existingUsers, err := s.usersRepo.GetUsersHavingEmailOrPhone(ctx, user.Email, user.Phone)
+	if err != nil {
+		return 0, fmt.Errorf("service:CreateUser {%w}", err)
+	}
+
+	if len(existingUsers) > 0 {
 		violations := make(httperror.Violations, 0)
 		for _, existing := range existingUsers {
 			if existing.Email == req.Email {
@@ -58,10 +62,6 @@ func (s *usersService) CreateUser(ctx context.Context, req models.CreateUserRequ
 		if violations.Len() > 0 {
 			return 0, fmt.Errorf("service:CreateUser {%w}", httperror.Conflict(violations))
 		}
-	}
-
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return 0, fmt.Errorf("service:CreateUser {%w}", err)
 	}
 
 	id, err := s.usersRepo.CreateUser(ctx, user)
@@ -106,7 +106,7 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 		return fmt.Errorf("usersService.UpdateUser: %w", err)
 	}
 
-	existingUsers, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, req.Email, req.Phone)
+	existingUsers, err := s.usersRepo.GetUsersHavingEmailOrPhone(ctx, req.Email, req.Phone)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("service:UpdateUser {%w}", err)
 	}
