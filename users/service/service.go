@@ -27,7 +27,7 @@ type usersService struct {
 	usersRepo psql.UsersRepository
 }
 
-func NewUsersService(usersRepo psql.UsersRepository) *usersService {
+func NewUsersService(usersRepo psql.UsersRepository) UsersService {
 	return &usersService{
 		usersRepo: usersRepo,
 	}
@@ -109,17 +109,19 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 		return fmt.Errorf("service:UpdateUser {%w}", err)
 	}
 
-	if existingUser.ID != userDb.ID {
-		voilations := make(httperror.Violations, 0)
+	if existingUser.ID != 0 && existingUser.ID != userDb.ID {
+		violations := make(httperror.Violations, 0)
 		if existingUser.Email == req.Email {
-			voilations.Add("email", "Email address already taken")
+			violations.Add("email", "Email address already taken")
 		}
 
 		if existingUser.Phone == req.Phone {
-			voilations.Add("phone", "Phone number already taken")
+			violations.Add("phone", "Phone number already taken")
 		}
 
-		return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(voilations))
+		if violations.Len() > 0 {
+			return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(violations))
+		}
 	}
 
 	user := dbModel.User{

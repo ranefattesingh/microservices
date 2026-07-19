@@ -7,8 +7,8 @@ content-type: application/json
 {
     "firstName": "Sahil",
     "lastName": "Rane",
-    "email": "noreply@ecommerce.comx",
-    "phone": "7217217217",
+    "email": "noreply1@ecommerce.comx",
+    "phone": "7217217216",
     "password": "test@123",
     "confirmPassword": "test@123"
 }
@@ -24,8 +24,8 @@ content-type: application/json
 {
     "firstName": "Sahil",
     "lastName": "Rane",
-    "email": "noreply@ecommerce.comx",
-    "phone": "7217217217",
+    "email": "noreply1@ecommerce.comx",
+    "phone": "",
     "password": "test@123",
     "confirmPassword": "test@123"
 }
