@@ -102,29 +102,34 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrUserNotFound
 		}
-
 		return fmt.Errorf("usersService.UpdateUser: %w", err)
 	}
 
 	existingUsers, err := s.usersRepo.GetUsersHavingEmailOrPhone(ctx, req.Email, req.Phone)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil {
 		return fmt.Errorf("service:UpdateUser {%w}", err)
 	}
 
-	violations := make(httperror.Violations, 0)
-	for _, existing := range existingUsers {
-		if existing.ID != userDb.ID {
-			if existing.Email == req.Email {
-				violations.Add("email", "Email address already taken")
+	if len(existingUsers) > 0 {
+		violations := make(httperror.Violations, 0)
+		for _, existing := range existingUsers {
+			if existing.ID == userDb.ID {
+				continue // Skip checking the user modifying their own row
 			}
-			if existing.Phone == req.Phone {
-				violations.Add("phone", "Phone number already taken")
+
+			if existing.ID != userDb.ID {
+				if existing.Email == req.Email {
+					violations.Add("email", "Email address already taken")
+				}
+				if existing.Phone == req.Phone {
+					violations.Add("phone", "Phone number already taken")
+				}
 			}
 		}
-	}
 
-	if violations.Len() > 0 {
-		return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(violations))
+		if violations.Len() > 0 {
+			return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(violations))
+		}
 	}
 
 	user := dbModel.User{
