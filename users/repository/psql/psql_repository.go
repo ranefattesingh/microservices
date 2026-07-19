@@ -14,7 +14,7 @@ var ErrNoRowsUpdated = errors.New("no rows were updated")
 
 type UsersRepository interface {
 	CreateUser(ctx context.Context, user models.User) (int64, error)
-	GetUserHavingEmailOrPhone(ctx context.Context, email, phone string) (models.User, error)
+	GetUserHavingEmailOrPhone(ctx context.Context, email, phone string) ([]models.User, error)
 	GetUser(ctx context.Context, id int64) (models.User, error)
 	UpdateUser(ctx context.Context, user models.User) error
 }
@@ -60,33 +60,23 @@ func (r *usersRepository) CreateUser(ctx context.Context, user models.User) (int
 	return id, nil
 }
 
-func (r *usersRepository) GetUserHavingEmailOrPhone(ctx context.Context, email, phone string) (models.User, error) {
+func (r *usersRepository) GetUsersHavingEmailOrPhone(ctx context.Context, email, phone string) ([]models.User, error) {
 	const query = `
 		SELECT id, first_name, last_name, email, phone, access_type, created_at, updated_at
 		FROM users
 		WHERE email = $1 OR phone = $2
 	`
-
 	rows, err := r.db.Pool.Query(ctx, query, email, phone)
 	if err != nil {
-		return models.User{}, fmt.Errorf("usersRepository.GetUserHavingEmailOrPhone: %w", err)
+		return nil, fmt.Errorf("usersRepository.GetUsersHavingEmailOrPhone: %w", err)
 	}
+	defer rows.Close()
 
 	users, err := pgx.CollectRows(rows, pgx.RowToStructByName[models.User])
 	if err != nil {
-		return models.User{}, fmt.Errorf("usersRepository.GetUserHavingEmailOrPhone: %w", err)
+		return nil, fmt.Errorf("usersRepository.GetUsersHavingEmailOrPhone: %w", err)
 	}
-
-	var user models.User
-
-	for _, u := range users {
-		if u.Email == email || u.Phone == phone {
-			user = u
-			break
-		}
-	}
-
-	return user, nil
+	return users, nil
 }
 
 func (r *usersRepository) GetUser(ctx context.Context, id int64) (models.User, error) {

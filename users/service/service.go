@@ -42,19 +42,21 @@ func (s *usersService) CreateUser(ctx context.Context, req models.CreateUserRequ
 		AccessType: dbModel.AccessType(req.AccessType),
 	}
 
-	existingUser, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, user.Email, user.Phone)
-	if err == nil {
-		voilations := make(httperror.Violations, 0)
-		if existingUser.Email == user.Email {
-			voilations.Add("email", "Email address already taken")
+	existingUsers, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, user.Email, user.Phone)
+	if !errors.Is(err, pgx.ErrNoRows) {
+		violations := make(httperror.Violations, 0)
+		for _, existing := range existingUsers {
+			if existing.Email == req.Email {
+				violations.Add("email", "Email address already taken")
+			}
+
+			if existing.Phone == req.Phone {
+				violations.Add("phone", "Phone number already taken")
+			}
 		}
 
-		if existingUser.Phone == user.Phone {
-			voilations.Add("phone", "Phone number already taken")
-		}
-
-		if voilations.Len() > 0 {
-			return 0, httperror.Conflict(voilations)
+		if violations.Len() > 0 {
+			return 0, fmt.Errorf("service:CreateUser {%w}", httperror.Conflict(violations))
 		}
 	}
 
@@ -104,24 +106,25 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 		return fmt.Errorf("usersService.UpdateUser: %w", err)
 	}
 
-	existingUser, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, req.Email, req.Phone)
+	existingUsers, err := s.usersRepo.GetUserHavingEmailOrPhone(ctx, req.Email, req.Phone)
 	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return fmt.Errorf("service:UpdateUser {%w}", err)
 	}
 
-	if existingUser.ID != 0 && existingUser.ID != userDb.ID {
-		violations := make(httperror.Violations, 0)
-		if existingUser.Email == req.Email {
-			violations.Add("email", "Email address already taken")
+	violations := make(httperror.Violations, 0)
+	for _, existing := range existingUsers {
+		if existing.ID != userDb.ID {
+			if existing.Email == req.Email {
+				violations.Add("email", "Email address already taken")
+			}
+			if existing.Phone == req.Phone {
+				violations.Add("phone", "Phone number already taken")
+			}
 		}
+	}
 
-		if existingUser.Phone == req.Phone {
-			violations.Add("phone", "Phone number already taken")
-		}
-
-		if violations.Len() > 0 {
-			return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(violations))
-		}
+	if violations.Len() > 0 {
+		return fmt.Errorf("service:UpdateUser {%w}", httperror.Conflict(violations))
 	}
 
 	user := dbModel.User{
