@@ -19,6 +19,7 @@ type UsersHandler interface {
 	CreateUser(c *gin.Context) response.Responder
 	GetUser(c *gin.Context) response.Responder
 	UpdateUser(c *gin.Context) response.Responder
+	DeleteUser(c *gin.Context) response.Responder
 }
 
 type userHandler struct {
@@ -57,6 +58,12 @@ func (uh userHandler) Routes() router.RouterGroup {
 				Method:      http.MethodPut,
 				HandlerFunc: uh.UpdateUser,
 			},
+			{
+				Name:        "DeleteUser",
+				Path:        "/:id",
+				Method:      http.MethodDelete,
+				HandlerFunc: uh.DeleteUser,
+			},
 		},
 	}
 }
@@ -81,12 +88,7 @@ func (uh userHandler) CreateUser(c *gin.Context) response.Responder {
 	if err != nil {
 		uh.logger.Error("server processing error", zap.Error(err))
 
-		pb, ok := errors.AsType[*httperror.ProblemDetails](err)
-		if ok {
-			return pb
-		}
-
-		return httperror.InternalServerError(err)
+		return handleServiceError(err)
 	}
 
 	result := map[string]int64{
@@ -112,13 +114,9 @@ func (uh userHandler) GetUser(c *gin.Context) response.Responder {
 	user, err := uh.userService.GetUser(c, id)
 
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return httperror.NotFound()
-		}
-
 		uh.logger.Error("failed to get user", zap.Error(err))
 
-		return httperror.InternalServerError() // Or your equivalent generic error handler
+		return handleServiceError(err)
 	}
 
 	return response.Ok(user)
@@ -152,19 +150,59 @@ func (uh userHandler) UpdateUser(c *gin.Context) response.Responder {
 
 	err = uh.userService.UpdateUser(c, id, req)
 	if err != nil {
-		if errors.Is(err, service.ErrUserNotFound) {
-			return httperror.NotFound()
-		}
+		uh.logger.Error("failed to update user", zap.Error(err))
 
-		pb, ok := errors.AsType[*httperror.ProblemDetails](err)
-		if ok {
-			return pb
-		}
-
-		uh.logger.Error("failed to get user", zap.Error(err))
-
-		return httperror.InternalServerError() // Or your equivalent generic error handler
+		return handleServiceError(err)
 	}
 
 	return response.NoContent()
+}
+
+func (uh userHandler) DeleteUser(c *gin.Context) response.Responder {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		uh.logger.Error("invalid user_id param received", zap.Error(err))
+
+		voilations := httperror.Violations{}
+		voilations.Add("id", "invalid or empty user id")
+
+		return httperror.BadRequest(voilations)
+	}
+
+	err = uh.userService.DeleteUser(c, id)
+	if err != nil {
+		uh.logger.Error("failed to delete user", zap.Error(err))
+
+		return handleServiceError(err)
+	}
+
+	return response.NoContent()
+}
+
+func handleServiceError(err error) *httperror.ProblemDetails {
+	if svcErr, ok := errors.AsType[*service.Error](err); ok {
+		var violations httperror.Violations
+		if len(svcErr.Violations) > 0 {
+			violations = make(httperror.Violations, 0)
+			for _, v := range svcErr.Violations {
+				violations.Add(v.Field, v.Message)
+			}
+		}
+
+		switch svcErr.Code {
+		case service.Validation:
+			return httperror.BadRequest(violations)
+
+		case service.NotFound:
+			notfound := httperror.NotFound()
+			notfound.Detail = svcErr.Message
+
+			return notfound
+
+		case service.Conflict:
+			return httperror.Conflict(violations)
+		}
+	}
+
+	return httperror.InternalServerError()
 }
