@@ -3,7 +3,7 @@ EXECUTABLE := ecommerceplatform
 DB_URL := postgresql://ecommerce:ecommerce@localhost:5432/ecommerce?sslmode=disable
 MIGRATIONS_DIR := migrations
 
-.PHONY: build start clean create-migration migrate-up migrate-down migrate-force migrate-version
+.PHONY: build start clean create-migration migrate-up migrate-down migrate-force migrate-version test coverage
 
 
 build:
@@ -37,3 +37,11 @@ migrate-force:
 
 migrate-version:
 	migrate -database "$(DB_URL)" -path $(MIGRATIONS_DIR) version
+
+test:
+	go test ./... -v -coverprofile=coverage.out
+
+coverage:
+	go test ./... -v -coverprofile=coverage.out
+	go tool cover -func=coverage.out
+	@echo "Total Coverage: $$(go tool cover -func=coverage.out | grep '^total:' | awk '{print $$3}')"
