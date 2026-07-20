@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	ErrUserNotFound  = errors.New("user not found")
+	ErrUserNotFound  = httperror.NotFound().SetDetail("user could not be found")
 	ErrNoUserUpdated = errors.New("user details could not be updated")
 )
 
@@ -21,6 +21,7 @@ type UsersService interface {
 	CreateUser(ctx context.Context, req models.CreateUserRequest) (int64, error)
 	GetUser(ctx context.Context, id int64) (models.User, error)
 	UpdateUser(ctx context.Context, id int64, req models.UpdateUserRequest) error
+	DeleteUser(ctx context.Context, id int64) error
 }
 
 type usersService struct {
@@ -76,7 +77,7 @@ func (s *usersService) GetUser(ctx context.Context, id int64) (models.User, erro
 	userDb, err := s.usersRepo.GetUser(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return models.User{}, ErrUserNotFound
+			return models.User{}, fmt.Errorf("usersService.GetUser: %w", ErrUserNotFound)
 		}
 
 		return models.User{}, fmt.Errorf("usersService.GetUser: %w", err)
@@ -100,8 +101,9 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 	userDb, err := s.usersRepo.GetUser(ctx, id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return ErrUserNotFound
+			return fmt.Errorf("usersService.UpdateUser: %w", ErrUserNotFound)
 		}
+
 		return fmt.Errorf("usersService.UpdateUser: %w", err)
 	}
 
@@ -148,6 +150,19 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 		}
 
 		return fmt.Errorf("service:UpdateUser {%w}", err)
+	}
+
+	return nil
+}
+
+func (s *usersService) DeleteUser(ctx context.Context, id int64) error {
+	err := s.usersRepo.DeleteUser(ctx, id)
+	if err != nil {
+		if errors.Is(err, psql.ErrNoRowsUpdated) {
+			return fmt.Errorf("service:DeleteUser {%w}", ErrUserNotFound)
+		}
+
+		return fmt.Errorf("service:DeleteUser {%w}", err)
 	}
 
 	return nil

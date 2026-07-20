@@ -1,6 +1,7 @@
 @baseUrl = http://localhost:8080
 @token = mytoken
 
+### CREATE USER
 POST {{baseUrl}}/api/v1/users
 content-type: application/json
 
@@ -13,11 +14,10 @@ content-type: application/json
     "confirmPassword": "test@123"
 }
 
-###
-
+### GET USER
 GET {{baseUrl}}/api/v1/users/1
 
-###
+### UPDATE USER
 PUT {{baseUrl}}/api/v1/users/1
 content-type: application/json
 
@@ -29,3 +29,6 @@ content-type: application/json
     "password": "test@123",
     "confirmPassword": "test@123"
 }
+
+### DELETE USER
+DELETE {{baseUrl}}/api/v1/users/1
