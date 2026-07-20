@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5"
 	httperror "github.com/ranefattesingh/ecommerce-platform/pkg/httperror"
 	"github.com/ranefattesingh/ecommerce-platform/users/handlers/models"
+	"github.com/ranefattesingh/ecommerce-platform/users/repository"
 	dbModel "github.com/ranefattesingh/ecommerce-platform/users/repository/models"
-	"github.com/ranefattesingh/ecommerce-platform/users/repository/psql"
 )
 
 var (
@@ -25,10 +25,10 @@ type UsersService interface {
 }
 
 type usersService struct {
-	usersRepo psql.UsersRepository
+	usersRepo repository.UsersRepository
 }
 
-func NewUsersService(usersRepo psql.UsersRepository) UsersService {
+func NewUsersService(usersRepo repository.UsersRepository) UsersService {
 	return &usersService{
 		usersRepo: usersRepo,
 	}
@@ -145,7 +145,7 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 
 	err = s.usersRepo.UpdateUser(ctx, user)
 	if err != nil {
-		if errors.Is(err, psql.ErrNoRowsUpdated) {
+		if errors.Is(err, repository.ErrNoRowsUpdated) {
 			return ErrNoUserUpdated
 		}
 
@@ -158,7 +158,7 @@ func (s *usersService) UpdateUser(ctx context.Context, id int64, req models.Upda
 func (s *usersService) DeleteUser(ctx context.Context, id int64) error {
 	err := s.usersRepo.DeleteUser(ctx, id)
 	if err != nil {
-		if errors.Is(err, psql.ErrNoRowsUpdated) {
+		if errors.Is(err, repository.ErrNoRowsUpdated) {
 			return fmt.Errorf("service:DeleteUser {%w}", ErrUserNotFound)
 		}
 

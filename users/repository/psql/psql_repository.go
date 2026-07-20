@@ -2,23 +2,13 @@ package psql
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/ranefattesingh/ecommerce-platform/users/platform/database/psql"
+	"github.com/ranefattesingh/ecommerce-platform/users/repository"
 	"github.com/ranefattesingh/ecommerce-platform/users/repository/models"
 )
-
-var ErrNoRowsUpdated = errors.New("no rows were updated")
-
-type UsersRepository interface {
-	CreateUser(ctx context.Context, user models.User) (int64, error)
-	GetUsersHavingEmailOrPhone(ctx context.Context, email, phone string) ([]models.User, error)
-	GetUser(ctx context.Context, id int64) (models.User, error)
-	UpdateUser(ctx context.Context, user models.User) error
-	DeleteUser(ctx context.Context, id int64) error
-}
 
 type usersRepository struct {
 	db *psql.Database
@@ -121,7 +111,7 @@ func (r *usersRepository) UpdateUser(ctx context.Context, user models.User) erro
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("usersRepository.UpdateUser: %w", ErrNoRowsUpdated)
+		return fmt.Errorf("usersRepository.UpdateUser: %w", repository.ErrNoRowsUpdated)
 	}
 
 	return nil
@@ -140,7 +130,7 @@ func (r *usersRepository) DeleteUser(ctx context.Context, id int64) error {
 	}
 
 	if cmd.RowsAffected() == 0 {
-		return fmt.Errorf("usersRepository.DeleteUser: %w", ErrNoRowsUpdated)
+		return fmt.Errorf("usersRepository.DeleteUser: %w", repository.ErrNoRowsUpdated)
 	}
 
 	return nil
