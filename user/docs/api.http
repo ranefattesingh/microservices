@@ -1,0 +1,15 @@
+@host=http://localhost:8080
+
+### Create User
+POST http://{{host}}/users
+content-type: application/json
+
+{
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "test@noreply.com",
+    "password": "password123"
+}
+
+### Get User by ID
+GET http://{{host}}/users/1
