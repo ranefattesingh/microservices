@@ -1,0 +1,11 @@
+@host=http://localhost:8080
+
+POST http://{{host}}/users
+content-type: application/json
+
+{
+    "name": "John Doe",
+    "email": "test@noreply.com",
+    "password": "password123",
+    "confirm_password": "password123"
+}
