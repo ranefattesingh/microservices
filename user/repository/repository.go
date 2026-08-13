@@ -10,6 +10,7 @@ var _ UserRepository = (*userRepository)(nil)
 
 type UserRepository interface {
 	CreateUser(ctx context.Context, user *models.User) (int64, error)
+	GetUser(ctx context.Context, id int64) (*models.User, error)
 }
 
 type userRepository struct {
@@ -24,4 +25,9 @@ func NewUserRepository() UserRepository {
 func (r *userRepository) CreateUser(ctx context.Context, user *models.User) (int64, error) {
 	// TODO: Implement database insert logic here
 	return 0, nil
+}
+
+func (r *userRepository) GetUser(ctx context.Context, id int64) (*models.User, error) {
+	// TODO: Implement database query logic here
+	return nil, nil
 }

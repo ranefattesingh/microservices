@@ -11,6 +11,7 @@ type Responder interface {
 	Created(data any) error
 	BadRequest(error) error
 	InternalServerError() error
+	NotFound() error
 }
 
 type Response struct {
@@ -63,6 +64,18 @@ func (r *Response) BadRequest(err error) error {
 func (r *Response) InternalServerError() error {
 	r.statusCode = http.StatusInternalServerError
 	r.Error = errors.New("internal server error")
+
+	newErr := json.NewEncoder(r.w).Encode(r.Data)
+	if newErr != nil {
+		return newErr
+	}
+
+	return nil
+}
+
+func (r *Response) NotFound() error {
+	r.statusCode = http.StatusNotFound
+	r.Error = errors.New("not found")
 
 	newErr := json.NewEncoder(r.w).Encode(r.Data)
 	if newErr != nil {

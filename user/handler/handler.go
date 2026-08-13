@@ -11,6 +11,7 @@ var _ UserHandler = (*userHandle)(nil)
 
 type UserHandler interface {
 	CreateUser(w http.ResponseWriter, r *http.Request)
+	GetUser(w http.ResponseWriter, r *http.Request)
 }
 
 type userHandle struct {
@@ -25,4 +26,5 @@ func NewUserHandler(s service.UserService) *userHandle {
 
 func (h *userHandle) Routes(r chi.Router) {
 	r.Post("/", h.CreateUser)
+	r.Get("/{id}", h.GetUser)
 }
