@@ -4,28 +4,39 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+
+	"github.com/ranefattesingh/microservices/user/pkg"
+)
+
+var (
+	ErrInternalServerErrorMsg = "server is unable to process at a moment"
 )
 
 type Responder interface {
-	ResponseJSON(data any) error
-	Created(data any) error
+	ResponseJSON(any) error
+	Created(any) error
+	NoContent() error
 	BadRequest(error) error
 	InternalServerError() error
-	NotFound() error
+	NotFound(error) error
 }
 
 type Response struct {
-	Success    bool  `json:"success"`
-	Data       any   `json:"data,omitempty"`
-	Error      error `json:"error,omitempty"`
-	statusCode int   `json:"-"`
+	Success    bool   `json:"success"`
+	Data       any    `json:"data,omitempty"`
+	Error      *Error `json:"error,omitempty"`
+	statusCode int    `json:"-"`
 	w          http.ResponseWriter
+}
+
+type Error struct {
+	Message string           `json:"message"`
+	Fields  []pkg.FieldError `json:"fields"`
 }
 
 func Respond(w http.ResponseWriter) Responder {
 	return &Response{
-		statusCode: http.StatusOK,
-		w:          w,
+		w: w,
 	}
 }
 
@@ -49,37 +60,54 @@ func (r *Response) Created(data any) error {
 	return r.ResponseJSON(r.Data)
 }
 
+func (r *Response) NoContent() error {
+	r.statusCode = http.StatusNoContent
+
+	return r.encodeJSON()
+}
+
 func (r *Response) BadRequest(err error) error {
 	r.statusCode = http.StatusBadRequest
-	r.Error = err
+	r.mapError(err)
 
-	newErr := json.NewEncoder(r.w).Encode(r.Data)
-	if newErr != nil {
-		return newErr
-	}
-
-	return nil
+	return r.encodeJSON()
 }
 
 func (r *Response) InternalServerError() error {
 	r.statusCode = http.StatusInternalServerError
-	r.Error = errors.New("internal server error")
-
-	newErr := json.NewEncoder(r.w).Encode(r.Data)
-	if newErr != nil {
-		return newErr
+	r.Error = &Error{
+		Message: ErrInternalServerErrorMsg,
 	}
 
-	return nil
+	return r.encodeJSON()
 }
 
-func (r *Response) NotFound() error {
+func (r *Response) NotFound(err error) error {
 	r.statusCode = http.StatusNotFound
-	r.Error = errors.New("not found")
+	r.mapError(err)
 
-	newErr := json.NewEncoder(r.w).Encode(r.Data)
-	if newErr != nil {
-		return newErr
+	return r.encodeJSON()
+}
+
+func (r *Response) mapError(err error) {
+	r.Error = &Error{
+		Message: err.Error(),
+	}
+
+	httpErr, ok := errors.AsType[*pkg.HTTPError](err)
+	if ok {
+		r.Error.Fields = httpErr.Fields
+		r.Error.Message = httpErr.Message
+	}
+
+}
+
+func (r *Response) encodeJSON() error {
+	r.w.Header().Add("Content-Type", "application/json")
+	r.w.WriteHeader(r.statusCode)
+	err := json.NewEncoder(r.w).Encode(r)
+	if err != nil {
+		return err
 	}
 
 	return nil
