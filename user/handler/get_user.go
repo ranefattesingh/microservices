@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/ranefattesingh/microservices/user/json"
 )
+
+var ErrUserDoesNotExist = errors.New("user does not exist")
 
 func (h *userHandle) GetUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
@@ -23,7 +26,7 @@ func (h *userHandle) GetUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user == nil {
-		json.Respond(w).NotFound()
+		json.Respond(w).NotFound(ErrUserDoesNotExist)
 		return
 	}
 

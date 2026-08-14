@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/ranefattesingh/microservices/user/service"
+	"github.com/ranefattesingh/microservices/user/validator"
 )
 
 var _ UserHandler = (*userHandle)(nil)
@@ -16,11 +17,13 @@ type UserHandler interface {
 
 type userHandle struct {
 	s service.UserService
+	v *validator.Validator
 }
 
 func NewUserHandler(s service.UserService) *userHandle {
 	return &userHandle{
 		s: s,
+		v: validator.NewValidator(),
 	}
 }
 
