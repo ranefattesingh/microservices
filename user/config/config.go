@@ -1,5 +1,10 @@
 package config
 
+import (
+	"fmt"
+	"net/url"
+)
+
 // Config represents the application configuration
 type Config struct {
 	App      AppConfig      `koanf:"app"`
@@ -30,4 +35,22 @@ type DatabaseConfig struct {
 	SSLMode  string `koanf:"sslmode"`
 	MaxConn  int    `koanf:"max_conn"`
 	MinConn  int    `koanf:"min_conn"`
+}
+
+func (dc DatabaseConfig) EncodedConnectionString() string {
+	u := &url.URL{
+		Scheme: "postgres",
+		Host:   fmt.Sprintf("%s:%d", dc.Host, dc.Port),
+		Path:   dc.Database,
+	}
+
+	u.User = url.UserPassword(dc.User, dc.Password)
+
+	q := u.Query()
+	if dc.SSLMode != "" {
+		q.Set("sslmode", dc.SSLMode)
+	}
+	u.RawQuery = q.Encode()
+
+	return u.String()
 }
