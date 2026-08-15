@@ -1,34 +1,33 @@
 package handler
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/ranefattesingh/microservices/user/handler/dto"
 	"github.com/ranefattesingh/microservices/user/json"
+	"go.uber.org/zap"
 )
-
-var ErrUserDoesNotExist = errors.New("user does not exist")
 
 func (h *userHandle) GetUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		json.Respond(w).BadRequest(err)
+		h.logger.Error("get user: unable to parse query param user_id", zap.Error(err))
+		handleError(w, ErrInvalidUserID)
+
 		return
 	}
 
-	user, err := h.s.GetUser(r.Context(), id)
+	user, err := h.service.GetUser(r.Context(), id)
 	if err != nil {
-		json.Respond(w).InternalServerError()
+		h.logger.Error("get user: fail", zap.Error(err))
+
+		handleError(w, err)
+
 		return
 	}
 
-	if user == nil {
-		json.Respond(w).NotFound(ErrUserDoesNotExist)
-		return
-	}
-
-	json.Respond(w).ResponseJSON(user)
+	json.Respond(w).JSON(dto.FromServiceModel(user))
 }

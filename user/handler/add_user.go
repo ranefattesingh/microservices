@@ -5,40 +5,31 @@ import (
 
 	"github.com/ranefattesingh/microservices/user/handler/dto"
 	"github.com/ranefattesingh/microservices/user/json"
-	"github.com/ranefattesingh/microservices/user/pkg"
-	"github.com/ranefattesingh/microservices/user/service/models"
-)
-
-var (
-	ErrUnableToDecode = "unable to decode the request"
-	ErrInvalidRequest = "invalid request"
+	"go.uber.org/zap"
 )
 
 func (h *userHandle) CreateUser(w http.ResponseWriter, r *http.Request) {
 	req := dto.CreateUserRequest{}
 	err := json.Decode(r, &req)
 	if err != nil {
-		json.Respond(w).BadRequest(pkg.NewHTTPError(ErrUnableToDecode))
+		h.logger.Error("create user: unable to decode request", zap.Error(err))
+		handleError(w, ErrBadRequest)
 
 		return
 	}
 
-	if fieldErrs := h.v.ValidateCreateUser(req); fieldErrs != nil {
-		json.Respond(w).BadRequest(pkg.NewHTTPError(ErrInvalidRequest, fieldErrs...))
+	if fieldErrs := dto.ValidateUser(h.validator, req); fieldErrs != nil {
+		h.logger.Error("create user: invalid request", zap.Error(err))
+		json.Respond(w).BadRequest(ErrBadRequest, fieldErrs...)
 
 		return
 	}
 
-	user := &models.User{
-		FirstName: req.FirstName,
-		LastName:  req.LastName,
-		Email:     req.Email,
-		Password:  req.Password,
-	}
-
-	id, err := h.s.CreateUser(r.Context(), user)
+	user := req.ToServiceModel()
+	id, err := h.service.CreateUser(r.Context(), user)
 	if err != nil {
-		json.Respond(w).InternalServerError()
+		h.logger.Error("create user: fail", zap.Error(err))
+		handleError(w, err)
 
 		return
 	}

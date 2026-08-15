@@ -31,7 +31,7 @@ func main() {
 
 	userRepository := db.NewUserRepository(pool)
 	userService := service.NewUserService(userRepository)
-	userHandler := handler.NewUserHandler(userService)
+	userHandler := handler.NewUserHandler(logger, userService)
 
 	ctx, stop := signal.NotifyContext(
 		context.Background(),
