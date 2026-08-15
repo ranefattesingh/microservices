@@ -10,9 +10,9 @@ server:
 database:
   host: "localhost"
   port: 5432
-  user: "postgres"
-  password: "postgres"
-  database: "users_db"
+  user: "test"
+  password: "test1234"
+  database: "users"
   sslmode: "disable"
   max_conn: 10
   min_conn: 2

@@ -15,7 +15,7 @@ func NewRouter(providers ...RouteProvider) chi.Router {
 	r := chi.NewRouter()
 
 	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-		json.Respond(w).ResponseJSON("pong!")
+		json.Respond(w).JSON("pong!")
 	})
 
 	for _, provider := range providers {

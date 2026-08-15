@@ -30,7 +30,7 @@ func NewUserRepository(db pool.Database) UserRepository {
 
 func (r *userRepository) Create(ctx context.Context, user *models.User) (int64, error) {
 	query := `
-		INSERT INTO s (first_name, last_name, email, password, created_at, updated_at)
+		INSERT INTO users (first_name, last_name, email, password, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, NOW(), NOW())
 		RETURNING id
 	`
@@ -81,7 +81,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.
 	query := `
 		SELECT id, first_name, last_name, email, password, created_at, updated_at
 		FROM users
-		WHERE id = $1
+		WHERE email = $1
 	`
 
 	user := &models.User{}
@@ -104,9 +104,9 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*models.
 
 func (r *userRepository) Update(ctx context.Context, id int64, user *models.User) error {
 	query := `
-		UPDATE s
+		UPDATE users
 		SET first_name = $1, last_name = $2, email = $3, password = $4, updated_at = NOW()
-		WHERE id = $6
+		WHERE id = $5
 	`
 
 	_, err := r.db.Pool().Exec(

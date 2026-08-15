@@ -12,13 +12,16 @@ import (
 	"github.com/ranefattesingh/microservices/user/service/models"
 )
 
-var ErrEmailAlreadyTaken = pkg.NewHTTPError("user with given email already present")
-
+var (
+	ErrEmailAlreadyTaken = errors.New("user with given email already present")
+	ErrUserDoesNotExist  = errors.New("user does not exist")
+)
 var _ UserService = (*userService)(nil)
 
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) (int64, error)
 	GetUser(ctx context.Context, id int64) (*models.User, error)
+	UpdateUser(ctx context.Context, id int64, user *models.User) error
 }
 
 type userService struct {
@@ -64,6 +67,10 @@ func (s *userService) CreateUser(ctx context.Context, user *models.User) (int64,
 func (s *userService) GetUser(ctx context.Context, id int64) (*models.User, error) {
 	user, err := s.repo.GetByID(ctx, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrUserDoesNotExist
+		}
+
 		return nil, fmt.Errorf("service: %w", err)
 	}
 
@@ -77,4 +84,39 @@ func (s *userService) GetUser(ctx context.Context, id int64) (*models.User, erro
 	}
 
 	return model, nil
+}
+
+func (s *userService) UpdateUser(ctx context.Context, id int64, updateUser *models.User) error {
+	user, err := s.repo.GetByID(ctx, id)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrUserDoesNotExist
+		}
+
+		return fmt.Errorf("service: %w", err)
+	}
+
+	// attempted to updated user email with different user
+	userWithEmail, err := s.repo.GetByEmail(ctx, updateUser.Email)
+	if err == nil &&
+		updateUser.Email == userWithEmail.Email &&
+		id != userWithEmail.ID {
+		fmt.Println(id)
+		fmt.Println(userWithEmail)
+		return ErrEmailAlreadyTaken
+	}
+
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("service: %w", err)
+	}
+
+	user.FirstName = updateUser.FirstName
+	user.LastName = updateUser.LastName
+	user.Email = updateUser.Email
+
+	if err := s.repo.Update(ctx, id, user); err != nil {
+		return fmt.Errorf("service: %w", err)
+	}
+
+	return nil
 }
