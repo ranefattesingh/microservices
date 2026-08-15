@@ -7,18 +7,20 @@ import (
 	"github.com/ranefattesingh/microservices/user/json"
 )
 
-type Router interface {
-	Routes(chi chi.Router)
+type RouteProvider interface {
+	Routes(r chi.Router)
 }
 
-func NewRouter(userRouter Router) chi.Router {
-	router := chi.NewRouter()
+func NewRouter(providers ...RouteProvider) chi.Router {
+	r := chi.NewRouter()
 
-	router.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+	r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 		json.Respond(w).ResponseJSON("pong!")
 	})
 
-	router.Route("/users", func(r chi.Router) { userRouter.Routes(r) })
+	for _, provider := range providers {
+		provider.Routes(r)
+	}
 
-	return router
+	return r
 }

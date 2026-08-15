@@ -28,6 +28,8 @@ func NewUserHandler(s service.UserService) *userHandle {
 }
 
 func (h *userHandle) Routes(r chi.Router) {
-	r.Post("/", h.CreateUser)
-	r.Get("/{id}", h.GetUser)
+	r.Route("/v1/users", func(r chi.Router) {
+		r.Post("/", h.CreateUser)
+		r.Get("/{id}", h.GetUser)
+	})
 }

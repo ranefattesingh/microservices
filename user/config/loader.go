@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -11,86 +12,81 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-// Load loads configuration from YAML file and environment variables
-// Environment variables take precedence over YAML file values
-func Load(configFilePath string) (*Config, error) {
+type loader struct {
+	path string
+}
+
+func DefaultLoader() *loader {
+	return &loader{
+		path: "config.yaml",
+	}
+}
+
+func (l *loader) Load() (*Config, error) {
 	k := koanf.New(".")
 
-	// Load from YAML file if it exists
-	if configFilePath != "" {
-		if _, err := os.Stat(configFilePath); err == nil {
-			if err := k.Load(file.Provider(configFilePath), yaml.Parser()); err != nil {
-				return nil, fmt.Errorf("failed to load YAML config: %w", err)
-			}
+	loaded, err := l.loadFile(k)
+	if err != nil {
+		return nil, err
+	}
+
+	if !loaded {
+		if err := l.loadEnv(k); err != nil {
+			return nil, err
 		}
 	}
 
-	// Load from environment variables (with underscore callback for nested keys)
-	// Environment variables use underscores for nesting
-	// e.g., SERVER_HOST, SERVER_PORT, DATABASE_PASSWORD
-	if err := k.Load(env.Provider("", ".", func(s string) string {
-		return strings.ToLower(strings.ReplaceAll(s, "_", "."))
-	}), nil); err != nil {
-		return nil, fmt.Errorf("failed to load env config: %w", err)
-	}
+	cfg := new(Config)
 
-	// Unmarshal into Config struct
-	cfg := &Config{}
 	if err := k.Unmarshal("", cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+		return nil, fmt.Errorf("unmarshal config: %w", err)
 	}
 
 	return cfg, nil
 }
 
-// LoadWithDefaults loads configuration with default values
-func LoadWithDefaults(configFilePath string) (*Config, error) {
-	k := koanf.New(".")
-
-	// Set default values
-	defaults := map[string]interface{}{
-		"app.name":          "user-service",
-		"app.version":       "1.0.0",
-		"app.env":           "development",
-		"server.host":       "0.0.0.0",
-		"server.port":       8080,
-		"database.host":     "localhost",
-		"database.port":     5432,
-		"database.user":     "postgres",
-		"database.password": "postgres",
-		"database.database": "users_db",
-		"database.sslmode":  "disable",
-		"database.max_conn": 10,
-		"database.min_conn": 2,
+func (l *loader) loadFile(k *koanf.Koanf) (bool, error) {
+	if l.path == "" {
+		return false, nil
 	}
 
-	if err := k.Load(koanf.KeyMapProvider(defaults), koanf.Json()); err != nil {
-		return nil, fmt.Errorf("failed to set defaults: %w", err)
-	}
-
-	// Load from YAML file if it exists
-	if configFilePath != "" {
-		if _, err := os.Stat(configFilePath); err == nil {
-			if err := k.Load(file.Provider(configFilePath), yaml.Parser()); err != nil {
-				return nil, fmt.Errorf("failed to load YAML config: %w", err)
-			}
+	if _, err := os.Stat(l.path); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return false, nil
 		}
+
+		return false, fmt.Errorf("stat config file: %w", err)
 	}
 
-	// Load from environment variables (override file config)
-	// Environment variables use underscores for nesting
-	// e.g., SERVER_HOST, SERVER_PORT, DATABASE_PASSWORD
-	if err := k.Load(env.Provider("", ".", func(s string) string {
-		return strings.ToLower(strings.ReplaceAll(s, "_", "."))
-	}), nil); err != nil {
-		return nil, fmt.Errorf("failed to load env config: %w", err)
+	if err := k.Load(
+		file.Provider(l.path),
+		yaml.Parser(),
+	); err != nil {
+		return false, fmt.Errorf("load config file: %w", err)
 	}
 
-	// Unmarshal into Config struct
-	cfg := &Config{}
-	if err := k.Unmarshal("", cfg); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal config: %w", err)
+	return true, nil
+}
+
+func (l *loader) loadEnv(k *koanf.Koanf) error {
+	const prefix = "USER_SERVICE_"
+
+	if err := k.Load(
+		env.Provider(
+			prefix,
+			".",
+			func(s string) string {
+				s = strings.TrimPrefix(s, prefix)
+
+				return strings.ToLower(
+					strings.ReplaceAll(s, "__", "."),
+				)
+			},
+		),
+		nil,
+	); err != nil {
+		return fmt.Errorf("load environment config: %w", err)
 	}
 
-	return cfg, nil
+	return nil
 }
