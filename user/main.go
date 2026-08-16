@@ -1,5 +1,10 @@
 package main
 
+// @title User Service API
+// @version 1.0
+// @description Microservice for user management.
+// @host localhost:8080
+// @BasePath /
 import (
 	"context"
 	"os"

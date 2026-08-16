@@ -21,6 +21,7 @@ var _ UserService = (*userService)(nil)
 type UserService interface {
 	CreateUser(ctx context.Context, user *models.User) (int64, error)
 	GetUser(ctx context.Context, id int64) (*models.User, error)
+	GetAllUsers(ctx context.Context, page, limit int) ([]*models.User, int, error)
 	UpdateUser(ctx context.Context, id int64, user *models.User) error
 }
 
@@ -84,6 +85,34 @@ func (s *userService) GetUser(ctx context.Context, id int64) (*models.User, erro
 	}
 
 	return model, nil
+}
+
+func (s *userService) GetAllUsers(ctx context.Context, page, limit int) ([]*models.User, int, error) {
+	if page < 1 {
+		page = 1
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+
+	users, total, err := s.repo.GetAll(ctx, page, limit)
+	if err != nil {
+		return nil, 0, fmt.Errorf("service: %w", err)
+	}
+
+	result := make([]*models.User, 0, len(users))
+	for _, user := range users {
+		result = append(result, &models.User{
+			ID:        user.ID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt,
+			UpdatedAt: user.UpdatedAt,
+		})
+	}
+
+	return result, total, nil
 }
 
 func (s *userService) UpdateUser(ctx context.Context, id int64, updateUser *models.User) error {

@@ -1,0 +1,16 @@
+# Git and editor files
+.git
+.gitignore
+.vscode
+.idea
+
+# Build artifacts
+bin/
+tmp/
+*.log
+
+# Local configuration that should not be copied into the Docker image
+config.yaml
+
+# OS / editor noise
+.DS_Store
