@@ -1,15 +1,35 @@
 @host=http://localhost:8080
 
-### Create User
-POST http://{{host}}/users
-content-type: application/json
+### Get all users
+GET {{host}}/v1/users
+Accept: application/json
+
+### Create user
+POST {{host}}/v1/users
+Content-Type: application/json
 
 {
-    "firstName": "John",
-    "lastName": "Doe",
-    "email": "test@noreply.com",
-    "password": "password123"
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.doe@example.com",
+  "password": "Password123",
+  "confirm_password": "Password123"
 }
 
-### Get User by ID
-GET http://{{host}}/users/1
+### Get user by ID
+GET {{host}}/v1/users/1
+Accept: application/json
+
+### Update user by ID
+PUT {{host}}/v1/users/1
+Content-Type: application/json
+
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john.updated@example.com"
+}
+
+### Swagger UI
+GET {{host}}/swagger/index.html
+Accept: text/html

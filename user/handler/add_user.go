@@ -8,6 +8,16 @@ import (
 	"go.uber.org/zap"
 )
 
+// CreateUser creates a new user.
+// @Summary Create a user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param request body dto.CreateUserRequest true "Create user payload"
+// @Success 201 {object} map[string]int64
+// @Failure 400 {object} json.Error
+// @Failure 409 {object} json.Error
+// @Router /v1/users/ [post]
 func (h *userHandle) CreateUser(w http.ResponseWriter, r *http.Request) {
 	req := dto.CreateUserRequest{}
 	err := json.Decode(r, &req)

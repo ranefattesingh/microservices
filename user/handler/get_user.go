@@ -10,6 +10,15 @@ import (
 	"go.uber.org/zap"
 )
 
+// GetUser fetches a single user by ID.
+// @Summary Get user by ID
+// @Tags users
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} dto.UserResponse
+// @Failure 400 {object} json.Error
+// @Failure 404 {object} json.Error
+// @Router /v1/users/{id} [get]
 func (h *userHandle) GetUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)

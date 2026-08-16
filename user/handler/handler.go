@@ -21,6 +21,7 @@ var _ UserHandler = (*userHandle)(nil)
 type UserHandler interface {
 	CreateUser(w http.ResponseWriter, r *http.Request)
 	GetUser(w http.ResponseWriter, r *http.Request)
+	GetAllUsers(w http.ResponseWriter, r *http.Request)
 	UpdateUser(w http.ResponseWriter, r *http.Request)
 }
 
@@ -41,6 +42,7 @@ func NewUserHandler(l *zap.Logger, s service.UserService) *userHandle {
 func (h *userHandle) Routes(r chi.Router) {
 	r.Route("/v1/users", func(r chi.Router) {
 		r.Post("/", h.CreateUser)
+		r.Get("/", h.GetAllUsers)
 		r.Get("/{id}", h.GetUser)
 		r.Put("/{id}", h.UpdateUser)
 	})

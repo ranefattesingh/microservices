@@ -10,6 +10,18 @@ import (
 	"go.uber.org/zap"
 )
 
+// UpdateUser updates an existing user.
+// @Summary Update a user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param request body dto.UpdateUserRequest true "Update user payload"
+// @Success 204 {string} string "No Content"
+// @Failure 400 {object} json.Error
+// @Failure 404 {object} json.Error
+// @Failure 409 {object} json.Error
+// @Router /v1/users/{id} [put]
 func (h *userHandle) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	idStr := chi.URLParam(r, "id")
 	id, err := strconv.ParseInt(idStr, 10, 64)

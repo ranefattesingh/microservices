@@ -1,0 +1,187 @@
+basePath: /
+definitions:
+  dto.CreateUserRequest:
+    properties:
+      confirm_password:
+        type: string
+      email:
+        type: string
+      first_name:
+        minLength: 2
+        type: string
+      last_name:
+        minLength: 2
+        type: string
+      password:
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    - password
+    type: object
+  dto.UpdateUserRequest:
+    properties:
+      email:
+        type: string
+      first_name:
+        minLength: 2
+        type: string
+      last_name:
+        minLength: 2
+        type: string
+    required:
+    - email
+    - first_name
+    - last_name
+    type: object
+  dto.UserResponse:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: integer
+      last_name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  json.Error:
+    properties:
+      fields:
+        items:
+          $ref: '#/definitions/pkg.FieldError'
+        type: array
+      message:
+        type: string
+    type: object
+  pkg.FieldError:
+    properties:
+      error:
+        type: string
+      field:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: Microservice for user management.
+  title: User Service API
+  version: "1.0"
+paths:
+  /v1/users/:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/json.Error'
+      summary: List users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Create user payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              format: int64
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/json.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/json.Error'
+      summary: Create a user
+      tags:
+      - users
+  /v1/users/{id}:
+    get:
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/dto.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/json.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/json.Error'
+      summary: Get user by ID
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update user payload
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/dto.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/json.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/json.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/json.Error'
+      summary: Update a user
+      tags:
+      - users
+swagger: "2.0"
