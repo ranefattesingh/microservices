@@ -2,57 +2,60 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
-
-	repo "github.com/ranefattesingh/microservices/auth/repository"
-	"github.com/ranefattesingh/microservices/auth/repository/cache"
-	"github.com/ranefattesingh/microservices/auth/repository/db"
 	"github.com/ranefattesingh/microservices/auth/handler/dto"
+	"github.com/ranefattesingh/microservices/auth/repository"
+	"github.com/ranefattesingh/microservices/auth/service/models"
 )
 
 var (
-	ErrInvalidCredentials   = errors.New("invalid credentials")
-	ErrEmailAlreadyTaken    = errors.New("email already taken")
-	defaultRefreshTokenTTL  = 7 * 24 * time.Hour
+	ErrInvalidCredentials = errors.New("invalid credentials")
+	ErrEmailAlreadyTaken  = errors.New("email already taken")
 )
 
-// AuthService provides auth related operations backed by repository.
-type AuthService struct {
-	repo *repo.UserRepository
+type AuthService interface {
+	Login(ctx context.Context, l dto.LoginRequest) (string, string, error)
+	Register(ctx context.Context, r dto.RegisterRequest) error
+	Refresh(ctx context.Context, r dto.RefreshRequest) (string, error)
 }
 
-func NewAuthService() *AuthService {
-	ctx := context.Background()
-	// init db pool
-	dbPool, _ := db.NewPool(ctx)
-	// init cache client
-	cacheClient := cache.NewClient()
+// AuthService provides auth related operations backed by repository.
+type authService struct {
+	repo            repository.AuthRepository
+	tokenManager    *TokenManager
+	refreshTokenTTL time.Duration
+}
 
-	return &AuthService{
-		repo: repo.NewUserRepository(dbPool, cacheClient),
+func NewAuthService(repo repository.AuthRepository, tokenManager *TokenManager, refreshTokenTTL time.Duration) AuthService {
+	return &authService{
+		repo:            repo,
+		tokenManager:    tokenManager,
+		refreshTokenTTL: refreshTokenTTL,
 	}
 }
 
-// Register creates a new user in repository.
-func (s *AuthService) Register(ctx context.Context, r dto.RegisterRequest) error {
+// Register creates a new account in repository.
+func (s *authService) Register(ctx context.Context, r dto.RegisterRequest) error {
 	if len(r.Password) < 6 {
 		return errors.New("password must be at least 6 characters")
 	}
 
 	// hash password
-	hash, err := bcrypt.GenerateFromPassword([]byte(r.Password), bcrypt.DefaultCost)
+	hash, err := EncryptPassword(r.Password)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.repo.CreateUser(ctx, r.Email, string(hash))
+	account := &models.Account{
+		Email:    r.Email,
+		Password: hash,
+	}
+
+	_, err = s.repo.CreateAccount(ctx, account.ToRepositoryModel())
 	if err != nil {
-		if errors.Is(err, repo.ErrEmailAlreadyExists) {
+		if errors.Is(err, repository.ErrEmailAlreadyExists) {
 			return ErrEmailAlreadyTaken
 		}
 		return err
@@ -62,45 +65,54 @@ func (s *AuthService) Register(ctx context.Context, r dto.RegisterRequest) error
 }
 
 // Login validates credentials and returns access + refresh tokens.
-func (s *AuthService) Login(ctx context.Context, l dto.LoginRequest) (string, string, error) {
-	_, storedHash, err := s.repo.GetUserByEmail(ctx, l.Email)
+func (s *authService) Login(ctx context.Context, l dto.LoginRequest) (string, string, error) {
+	account, err := s.repo.GetAccountByEmail(ctx, l.Email)
 	if err != nil {
 		return "", "", ErrInvalidCredentials
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(storedHash), []byte(l.Password)); err != nil {
+	if err := ComparePassword(account.Password, l.Password); err != nil {
 		return "", "", ErrInvalidCredentials
 	}
 
-	access := s.randomToken()
-	refresh := s.randomToken()
-
-	// store refresh token in repo
-	if err := s.repo.StoreRefreshToken(ctx, refresh, l.Email, defaultRefreshTokenTTL); err != nil {
+	// Generate JWT tokens
+	accessToken, err := s.tokenManager.GenerateAccessToken(l.Email)
+	if err != nil {
 		return "", "", err
 	}
 
-	return access, refresh, nil
+	refreshToken, err := s.tokenManager.GenerateRefreshToken(l.Email)
+	if err != nil {
+		return "", "", err
+	}
+
+	// store refresh token in repo for revocation support (optional)
+	if err := s.repo.SaveRefreshToken(ctx, refreshToken, l.Email, s.refreshTokenTTL); err != nil {
+		return "", "", err
+	}
+
+	return accessToken, refreshToken, nil
 }
 
 // Refresh validates refresh token via repo then issues new access token.
-func (s *AuthService) Refresh(ctx context.Context, r dto.RefreshRequest) (string, error) {
-	email, err := s.repo.GetEmailByRefreshToken(ctx, r.RefreshToken)
+func (s *authService) Refresh(ctx context.Context, r dto.RefreshRequest) (string, error) {
+	// Validate refresh token JWT
+	claims, err := s.tokenManager.ValidateRefreshToken(r.RefreshToken)
 	if err != nil {
-		return "", errors.New("invalid refresh token")
+		return "", ErrInvalidCredentials
 	}
 
-	// touch or load user from cache (ensures cache is refreshed)
-	_, _, _ = s.repo.GetUserByEmail(ctx, email)
-
-	return s.randomToken(), nil
-}
-
-func (s *AuthService) randomToken() string {
-	b := make([]byte, 32)
-	_, err := rand.Read(b)
+	// Also check if refresh token exists in repo (for revocation support)
+	_, err = s.repo.GetEmailByRefreshToken(ctx, r.RefreshToken)
 	if err != nil {
-		return hex.EncodeToString([]byte(time.Now().Format(time.RFC3339Nano)))
+		return "", ErrInvalidCredentials
 	}
-	return hex.EncodeToString(b)
+
+	// Generate new access token
+	newAccessToken, err := s.tokenManager.GenerateAccessToken(claims.Email)
+	if err != nil {
+		return "", err
+	}
+
+	return newAccessToken, nil
 }

@@ -1,1 +1,0 @@
-CREATE TABLE IF NOT EXISTS users (\n    id BIGSERIAL PRIMARY KEY,\n    email TEXT NOT NULL UNIQUE,\n    password TEXT NOT NULL,\n    created_at TIMESTAMPTZ DEFAULT now()\n);\n

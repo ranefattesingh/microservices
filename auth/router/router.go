@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/ranefattesingh/microservices/auth/json"
-	httpSwagger "github.com/swaggo/http-swagger/v2"
+	// _ "github.com/ranefattesingh/microservices/auth/docs"
+	"github.com/ranefattesingh/microservices/pkg/encoding/json"
 )
 
 type RouteProvider interface {
@@ -19,9 +19,9 @@ func NewRouter(providers ...RouteProvider) chi.Router {
 		json.Respond(w).JSON("pong!")
 	})
 
-	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8081/swagger/doc.json"),
-	))
+	// r.Get("/swagger/*", httpSwagger.Handler(
+	// 	httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
+	// ))
 
 	for _, provider := range providers {
 		provider.Routes(r)

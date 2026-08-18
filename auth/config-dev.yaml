@@ -16,3 +16,8 @@ database:
   sslmode: "disable"
   max_conn: 10
   min_conn: 2
+
+jwt:
+  secret: "your-secret-key-change-in-production"
+  access_token_ttl: "15m"
+  refresh_token_ttl: "168h"

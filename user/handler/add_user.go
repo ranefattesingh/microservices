@@ -3,8 +3,8 @@ package handler
 import (
 	"net/http"
 
+	"github.com/ranefattesingh/microservices/pkg/encoding/json"
 	"github.com/ranefattesingh/microservices/user/handler/dto"
-	"github.com/ranefattesingh/microservices/user/json"
 	"go.uber.org/zap"
 )
 

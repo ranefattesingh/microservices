@@ -11,10 +11,10 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/ranefattesingh/microservices/pkg/pgx/pool"
 	"github.com/ranefattesingh/microservices/user/config"
 	"github.com/ranefattesingh/microservices/user/handler"
 	"github.com/ranefattesingh/microservices/user/repository/db"
-	"github.com/ranefattesingh/microservices/user/repository/db/pool"
 	"github.com/ranefattesingh/microservices/user/server/http"
 	"github.com/ranefattesingh/microservices/user/service"
 	"go.uber.org/zap"
@@ -24,7 +24,7 @@ func main() {
 	logger, _ := zap.NewProduction()
 	defer logger.Sync()
 
-	config, err := config.DefaultLoader().Load()
+	config, err := config.LoadConfig()
 	if err != nil {
 		logger.Fatal("fail to load config", zap.Error(err))
 	}

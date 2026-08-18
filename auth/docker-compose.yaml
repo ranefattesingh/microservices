@@ -1,0 +1,38 @@
+services:
+  auth:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: auth-service
+    working_dir: /app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    volumes:
+      - .:/app
+    environment:
+      AUTH_SERVICE_SERVER__HOST: "0.0.0.0"
+      AUTH_SERVICE_SERVER__PORT: "8080"
+      AUTH_SERVICE_DATABASE__HOST: "postgres"
+      AUTH_SERVICE_DATABASE__PORT: "5432"
+      AUTH_SERVICE_DATABASE__USER: "test"
+      AUTH_SERVICE_DATABASE__PASSWORD: "test1234"
+      AUTH_SERVICE_DATABASE__DATABASE: "auth"
+      AUTH_SERVICE_DATABASE__SSLMODE: "disable"
+    command: air -c .air.toml
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test1234
+      POSTGRES_DB: auth
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

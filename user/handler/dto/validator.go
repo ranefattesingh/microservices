@@ -4,7 +4,7 @@ import (
 	"errors"
 
 	"github.com/go-playground/validator/v10"
-	"github.com/ranefattesingh/microservices/user/pkg"
+	fieldErr "github.com/ranefattesingh/microservices/pkg/errors"
 	validatorWrap "github.com/ranefattesingh/microservices/user/validator"
 )
 
@@ -12,7 +12,7 @@ type ModificationRequest interface {
 	CreateUserRequest | UpdateUserRequest
 }
 
-func ValidateUser[T ModificationRequest](v *validatorWrap.Validator, req T) []pkg.FieldError {
+func ValidateUser[T ModificationRequest](v *validatorWrap.Validator, req T) []fieldErr.FieldError {
 	parse := func(fe validator.FieldError) string {
 		switch fe.Tag() {
 		case "required":
@@ -35,10 +35,10 @@ func ValidateUser[T ModificationRequest](v *validatorWrap.Validator, req T) []pk
 	err := v.Validate.Struct(req)
 	if err != nil {
 		if ve, ok := errors.AsType[validator.ValidationErrors](err); ok {
-			fields := make([]pkg.FieldError, 0, len(ve))
+			fields := make([]fieldErr.FieldError, 0, len(ve))
 
 			for _, ve := range ve {
-				fields = append(fields, pkg.FieldError{
+				fields = append(fields, fieldErr.FieldError{
 					Field:   ve.Field(),
 					Message: parse(ve),
 				})

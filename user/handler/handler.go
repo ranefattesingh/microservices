@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/ranefattesingh/microservices/user/json"
+	"github.com/ranefattesingh/microservices/pkg/encoding/json"
 	"github.com/ranefattesingh/microservices/user/service"
 	"github.com/ranefattesingh/microservices/user/validator"
 	"go.uber.org/zap"
