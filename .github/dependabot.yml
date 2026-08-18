@@ -1,0 +1,80 @@
+version: 2
+
+updates:
+  # Auth service dependencies
+  - package-ecosystem: "gomod"
+    directory: "/auth"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "auth"
+    groups:
+      go-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # User service dependencies
+  - package-ecosystem: "gomod"
+    directory: "/user"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "user"
+    groups:
+      go-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Shared packages
+  - package-ecosystem: "gomod"
+    directory: "/pkg"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Kolkata"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "pkg"
+    groups:
+      go-dependencies:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Auth Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/auth"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:30"
+      timezone: "Asia/Kolkata"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # User Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/user"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:30"
+      timezone: "Asia/Kolkata"
+    labels:
+      - "dependencies"
+      - "docker"
