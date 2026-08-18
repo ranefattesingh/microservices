@@ -4,8 +4,8 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/ranefattesingh/microservices/pkg/encoding/json"
 	_ "github.com/ranefattesingh/microservices/user/docs"
-	"github.com/ranefattesingh/microservices/user/json"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 

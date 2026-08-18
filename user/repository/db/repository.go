@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/ranefattesingh/microservices/pkg/pgx/pool"
 	"github.com/ranefattesingh/microservices/user/repository/db/models"
-	"github.com/ranefattesingh/microservices/user/repository/db/pool"
 )
 
 var _ UserRepository = (*userRepository)(nil)

@@ -1,14 +1,23 @@
-# Build stage
-FROM golang:1.20-alpine AS builder
-WORKDIR /src
-COPY go.mod go.sum ./
-RUN go env -w GOPROXY=https://proxy.golang.org,direct
-COPY . .
-RUN go build -o /auth ./...
+FROM golang:1.26.6-alpine
 
-# Final image
-FROM alpine:3.18
-RUN apk add --no-cache ca-certificates
-COPY --from=builder /auth /usr/local/bin/auth
-EXPOSE 8081
-ENTRYPOINT ["/usr/local/bin/auth"]
+WORKDIR /app
+
+COPY go.mod ./
+
+COPY go.sum ./
+
+RUN go mod download
+
+COPY . ./
+
+RUN go build -o user main.go
+
+FROM alpine:latest
+
+WORKDIR /app
+
+EXPOSE 8080
+
+COPY --from=0 /app/user /user
+
+CMD ["/auth"]
