@@ -13,36 +13,36 @@ import (
 )
 
 type loader struct {
-	path string
+	path   string
+	prefix string
 }
 
-func DefaultLoader() *loader {
+func NewLoader(path, prefix string) *loader {
 	return &loader{
-		path: "config.yaml",
+		path:   path,
+		prefix: prefix,
 	}
 }
 
-func (l *loader) Load() (*Config, error) {
+func (l *loader) Load(c any) error {
 	k := koanf.New(".")
 
 	loaded, err := l.loadFile(k)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	if !loaded {
 		if err := l.loadEnv(k); err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	cfg := new(Config)
-
-	if err := k.Unmarshal("", cfg); err != nil {
-		return nil, fmt.Errorf("unmarshal config: %w", err)
+	if err := k.Unmarshal("", c); err != nil {
+		return fmt.Errorf("unmarshal config: %w", err)
 	}
 
-	return cfg, nil
+	return nil
 }
 
 func (l *loader) loadFile(k *koanf.Koanf) (bool, error) {
@@ -69,14 +69,12 @@ func (l *loader) loadFile(k *koanf.Koanf) (bool, error) {
 }
 
 func (l *loader) loadEnv(k *koanf.Koanf) error {
-	const prefix = ""
-
 	if err := k.Load(
 		env.Provider(
-			prefix,
+			l.prefix,
 			".",
 			func(s string) string {
-				s = strings.TrimPrefix(s, prefix)
+				s = strings.TrimPrefix(s, l.prefix)
 
 				return strings.ToLower(
 					strings.ReplaceAll(s, "__", "."),
