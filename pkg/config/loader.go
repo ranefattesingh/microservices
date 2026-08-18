@@ -12,19 +12,19 @@ import (
 	"github.com/knadh/koanf/v2"
 )
 
-type loader struct {
+type Loader struct {
 	path   string
 	prefix string
 }
 
-func NewLoader(path, prefix string) *loader {
-	return &loader{
+func NewLoader(path, prefix string) *Loader {
+	return &Loader{
 		path:   path,
 		prefix: prefix,
 	}
 }
 
-func (l *loader) Load(c any) error {
+func (l *Loader) Load(c any) error {
 	k := koanf.New(".")
 
 	loaded, err := l.loadFile(k)
@@ -45,7 +45,7 @@ func (l *loader) Load(c any) error {
 	return nil
 }
 
-func (l *loader) loadFile(k *koanf.Koanf) (bool, error) {
+func (l *Loader) loadFile(k *koanf.Koanf) (bool, error) {
 	if l.path == "" {
 		return false, nil
 	}
@@ -68,7 +68,7 @@ func (l *loader) loadFile(k *koanf.Koanf) (bool, error) {
 	return true, nil
 }
 
-func (l *loader) loadEnv(k *koanf.Koanf) error {
+func (l *Loader) loadEnv(k *koanf.Koanf) error {
 	if err := k.Load(
 		env.Provider(
 			l.prefix,
